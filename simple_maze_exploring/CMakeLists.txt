@@ -4,7 +4,7 @@
 ## Set minimum required version of cmake, project name and compile options ##
 #############################################################################
 cmake_minimum_required(VERSION 2.8.3)
-project(simple_flocking)
+project(simple_maze_exploring)
 
 ###########################################################################
 ## Find catkin packages and libraries for catkin and system dependencies ##

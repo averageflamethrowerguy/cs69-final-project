@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <!-- Full information here http://wiki.ros.org/catkin/package.xml -->
 <package format="2">
-  <name>simple_flocking</name>
+  <name>simple_maze_exploring</name>
   <version>0.1.0</version>
   <description>
-    ROS package for moving the robot according to emergent flocking behavior.
+    ROS package for multirobot map generation and maze escape.
   </description>
   <maintainer email="alphonso.p.bradham.24@dartmouth.edu">Alphonso Bradham</maintainer>
   <license>MIT</license>
