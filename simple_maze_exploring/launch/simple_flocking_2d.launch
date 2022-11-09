@@ -1,0 +1,53 @@
+<launch>
+
+  <!-- Name of the world file to use -->
+  <arg name="world_file" default="$(find simple_flocking)/worlds/empty_world.world"/>
+  <param name="/use_sim_time" value="true"/>
+
+  <!-- Define robot names -->
+  <arg name="tb3_0" default="robot_0"/>
+  <arg name="tb3_1" default="robot_1"/>
+  <arg name="tb3_2" default="robot_2"/>
+  <arg name="tb3_3" default="robot_3"/>
+  <arg name="tb3_4" default="robot_4"/>
+  <arg name="tb3_5" default="robot_5"/>
+  <arg name="tb3_6" default="robot_6"/>
+  <arg name="tb3_7" default="robot_7"/>
+  <arg name="tb3_8" default="robot_8"/>
+  <arg name="tb3_9" default="robot_9"/>
+
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+
+  <!-- Run stageros simulator -->
+  <node pkg="stage_ros" type="stageros" name="stageros" args="$(arg world_file)">
+    <param name="base_watchdog_timeout" value="0.5"/>
+    <remap from="base_scan" to="scan"/>
+  </node>
+
+  <!-- Run gmapping on defined robots -->
+  <group ns = "$(arg tb3_0)">
+    <node pkg="gmapping" type="slam_gmapping" name="turtlebot3_slam_gmapping" output="screen">
+      <remap from="scan" to="/robot_0/base_scan"/>
+      <param name="odom_frame" value="/robot_0/odom"/>
+      <param name="base_frame" value="/robot_0/base_footprint"/>
+      <param name="map_frame" value="map"/>
+    </node>
+  </group>
+
+    <group ns = "$(arg tb3_1)">
+    <node pkg="gmapping" type="slam_gmapping" name="turtlebot3_slam_gmapping" output="screen">
+      <remap from="scan" to="/$(arg tb3_1)/base_scan"/>
+      <param name="odom_frame" value="/$(arg tb3_1)/odom"/>
+      <param name="base_frame" value="/$(arg tb3_1)/base_footprint"/>
+      <param name="map_frame" value="map"/>
+    </node>
+  </group>
+
+    <!-- rviz -->
+  <group>
+    <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find turtlebot3_slam)/rviz/turtlebot3_gmapping.rviz"/>
+  </group>
+
+</launch>
