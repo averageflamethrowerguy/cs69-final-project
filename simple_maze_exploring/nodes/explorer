@@ -1,0 +1,277 @@
+#!/usr/bin/env python
+'''
+Explorer Node:
+
+Overview of operations:
+The explorer nodes' main function is to explore an unknown area and map it.
+Multiple explorer nodes should run simultaneously.
+
+Algorithm:
+- robot rotates a full rotation to see its immediate surroundings
+    - if the robot encounters another robot
+        - map merge takes place
+    - for each new area it sees
+        - checks if that area is in its local map
+            - if it is not, it adds it to a group of locations to be explored
+    - robot calculates the longest possible (single direction) route it can take
+    - robot moves along that route and explores each node in the route
+    - robot does so until it encounters something (another robot, wall)
+   
+    - robot continues until it no longer has areas to explore
+        - when it has no new areas to explore
+            - robot moves arbitrarily (i.e. moving until it hits a wall, then turning right and moving again)
+            - robot moves until its laser scan sees an open area or another robot
+
+Discussion of Algorithm:
+    - the algorithm will function correctly because of the wandering nature of the robot when it has no other objectives
+    - need to determine how to know when to stop and find the exit (could have a 'rescue' intiative by the robot who found the exit)
+        - this 'rescue' initiative would be similar to the wandering robot implementation
+        - when rescue initiative is initiated, robot will wander around the map, sharing its map with robots it encounters while simultaneously
+          building its own map up so that any robot it encounters will have a clear exit path
+        - relies on quick exploration so that no robot is pulled out too early
+    - considering a 'gatekeeper' type node that is initialized if there is a single-node opening to a partition of the map that has already been fully explored
+        - functionality: in the real world, a simple marker that our explorers have access to that can be placed down in the environment
+        - an immobile bot that only map shares with any other robot it encounters
+        - frees the other robot for further exploration and prevents repeat exploration
+
+'''
+
+# Import of python modules.
+from cmath import cos, sin
+import math
+import numpy as np
+import random
+import time
+import tf
+#import queue
+#from turtle import right # use of pi.
+
+# import of relevant libraries.
+import rospy # module for ROS APIs
+from geometry_msgs.msg import Twist # message type for cmd_vel
+from sensor_msgs.msg import LaserScan # message type for scan
+from nav_msgs.msg import Odometry #message type for odom 
+
+
+from simple_flocking.simple_motion import SimpleMotion
+# Constants.
+FREQUENCY = 2 #Hz.
+LINEAR_VELOCITY = 0.2 # m/s
+ANGULAR_VELOCITY = math.pi/4 # rad/s
+LASER_ANGLE_FRONT = 0 # radians
+MIN_THRESHOLD_DISTANCE = 0.5 # m, threshold distance.
+DEFAULT_CMD_VEL_TOPIC = 'cmd_vel'
+DEFAULT_SCAN_TOPIC = 'base_scan'
+DEFAULT_ODOM_TOPIC = 'odom' 
+DEFAULT_POS_TOPIC = 'pos'
+#NUM_ROBOTS = 6 # (num_robots is actually one more than this)
+
+class Explorer():
+    def __init__(self, linear_velocity=LINEAR_VELOCITY, angular_velocity=ANGULAR_VELOCITY):
+        """Constructor."""
+
+        curr = rospy.get_namespace()        
+        # Setting up publishers/subscribers.
+        self._cmd_pub = rospy.Publisher(DEFAULT_CMD_VEL_TOPIC, Twist, queue_size=1)
+        
+        # Setting up subscriber.
+        self._laser_sub = rospy.Subscriber(DEFAULT_SCAN_TOPIC, LaserScan, self._laser_callback, queue_size=1)
+        self._odom_sub = rospy.Subscriber(curr + DEFAULT_ODOM_TOPIC , Odometry, self._odom_callback, queue_size=1)
+
+        # Other variables.
+        self.linear_velocity = linear_velocity # Constant linear velocity set.
+        self.angular_velocity = angular_velocity # Constant angular velocity set.
+        self._close_obstacle = False # Flag variable that is true if there is a close obstacle.
+
+        self._motion = SimpleMotion()
+
+    def stop(self): 
+        """Stop the robot."""
+        twist_msg = Twist()
+        self._cmd_pub.publish(twist_msg)
+
+    def _laser_callback(self, msg):  
+        """Processing of laser message."""
+        # Access to the index of the measurement in front of the robot.
+        # NOTE: assumption: the one at angle 0 corresponds to the front.
+        i = int((LASER_ANGLE_FRONT - msg.angle_min) / msg.angle_increment)
+        if msg.ranges[i] <= MIN_THRESHOLD_DISTANCE:
+            self._close_obstacle = True
+        else:
+            self._close_obstacle = False
+    
+    my_map = np.zeros([30,30])
+    location = np.array([-31,-31,-31])
+    def _odom_callback(self, msg):
+        #Processing the odom location message 
+        self.xpos=msg.pose.pose.position.x #get all necessary information from the robot
+        self.ypos=msg.pose.pose.position.y
+        self.orient=msg.pose.pose.orientation
+        to_add = [self.xpos, self.ypos, self.orient]   #add it to an array 
+        self.location = to_add
+
+        self.my_map[int(math.floor(self.xpos)),int(math.floor(self.ypos))] = 1
+
+    '''
+    def map_merge(self,bot_map):
+        print()
+        #merge "map" with robot's personal local map where "map" is from the other robot seen in get_surround
+
+    def get_surround(self):
+        twist_msg = Twist()
+        twist_msg.angular.z = math.pi
+        self._cmd_pub(twist_msg)
+        my_map = #from laserscan
+        #if another robot is seen in laser scan
+            #self.map_merge(bot_map)
+        return my_map
+    '''
+
+    def path_in_dir(self,x,y, mp, rpos):
+        
+        i = 1
+        print( i, int(rpos[0] + (i * x)) , int(rpos[1] + (i * y)))
+
+        while(rpos[1] + (i * y) > 0 and rpos[0] + (i * x) <= 29 and rpos[0] + (i * x) > 0 and rpos[1] + (i * y) <= 29 and mp[int(rpos[0] + (i * x)), int(rpos[1] + (i * y))] == 0):
+            i += 1
+        
+        #new_tuple = (i,)
+        return i,(rpos[0] + (i * x), rpos[1] + (i * y))
+
+
+    def calculate_path(self,robot_map_pos, my_map):
+        
+        i = 1
+        max_paths = [None for i in range(4)]
+        max_paths[0] = self.path_in_dir(0,1, my_map, robot_map_pos)
+        max_paths[1] = self.path_in_dir(1,0, my_map, robot_map_pos)
+        max_paths[2] = self.path_in_dir(0,-1, my_map, robot_map_pos)
+        max_paths[3] = self.path_in_dir(-1,0, my_map, robot_map_pos)
+
+        max_dir = max(max_paths,key=lambda x: x[0])
+        goal = max_dir[1]
+        vel = 0
+        if max_paths.index(max_dir) % 2 == 0:
+            vel = abs(goal[1] - robot_map_pos[1])
+        else:
+            vel = abs(goal[0] - robot_map_pos[0])
+        return goal,vel
+
+    def explore(self):
+        '''
+        - robot rotates a full rotation to see its immediate surroundings
+        
+        - if the robot encounters another robot
+            - map merge takes place
+        - for each new area it sees
+            - checks if that area is in its local map
+                - if it is not, it adds it to a group of locations to be explored
+        - robot calculates the longest possible (single direction) route it can take
+        - robot moves along that route and explores each node in the route
+        - robot does so until it encounters something (another robot, wall)
+    
+        - robot continues until it no longer has areas to explore
+            - when it has no new areas to explore
+                - robot moves arbitrarily (i.e. moving until it hits a wall, then turning right and moving again)
+                - robot moves until its laser scan sees an open area or another robot
+        '''        
+        '''flags = np.zeros(len(to_be_visited), dtype = bool)      #to track whether or not an individual location has already been visited
+        for i in range(0,len(to_be_visited)):                   #to initialize locations
+            for j in range(0,len(my_map)):
+                if to_be_visited[i] == my_map[j]:
+                    flags[i] = True
+        
+        to_visit = list()
+        for i in range(0,len(flag)):
+                if flags[i]:
+                    continue
+                else:
+                    to_visit.append(to_be_visited[i])'''
+        
+        print("here")
+        while (self.location[0] == -31):
+            pass
+        curr = rospy.get_namespace()        
+
+        #calculate longest chain of 0's in the localized array
+        
+
+        #robot_x = self.location[0]
+        #robot_y = self.location[1]
+        robot_map_pos = np.array([self.location[0], self.location[1]])
+        max_path = 0
+        max_dir = 0
+        i = 0
+        
+        goal, velo = self.calculate_path(robot_map_pos, self.my_map)
+        print(goal,velo)
+
+
+        vel = Twist()
+        quat = self.location[2]                                                          #get quaternion of current robot from locations      
+        print(quat)
+        angles = tf.transformations.euler_from_quaternion([quat.x,quat.y,quat.z,quat.w])        #transform quaternion to euler   
+        curr_angle = angles[2]                                                                  #get the current angle of the robot 
+        new_angle = math.atan2(goal[1],goal[0])                                               #get the new angle to go to
+        
+        self._motion.rotate_in_place(new_angle)
+        time.sleep(3)
+        self._motion.move_forward(velo)
+        print(self.my_map)
+        #ang_vel = new_angle - curr_angle
+
+        #return velo,ang_vel
+        # vel.angular.z = ang_vel
+        # self._cmd_pub.publish(vel)
+        # #time.sleep(10)
+
+        # vel.angular.z = 0
+        # vel.linear.x = velo
+        # print(vel.linear.x)
+        # self._cmd_pub.publish(vel)
+
+
+
+     
+def main():
+    """Main function."""
+
+    # 1st. initialization of node.
+    rospy.init_node("explorer")
+    
+    # Sleep for a few seconds to wait for the registration.
+    rospy.sleep(2)
+    
+    # Initialization of the class for the communicator.
+    explorer = Explorer()
+    
+    # If interrupted, send a stop command.
+    rospy.on_shutdown(explorer.stop)
+
+    try:
+        while not rospy.is_shutdown():
+            rate = rospy.Rate(FREQUENCY)
+
+            explorer.explore()
+
+            #Calculate velocity
+            # vel = Twist()                       #new twist message -AK, PA4
+            # velocity = np.array([ang_vel, lin_vel]) 
+            # vel.angular.z = velocity[0]
+            # if (velocity[0] > 0.2) or (velocity[0] < -0.2):
+            #     explorer._cmd_pub.publish(vel)     #first publish angular -AK, PA4
+            #     time.sleep(1)
+            # elif (velocity[0] < 0.2 and velocity[0] > 0) or (velocity[0] < 0 and velocity[0] > -0.2):
+            #     vel.linear.x = velocity[1]
+            #     explorer._cmd_pub.publish(vel)     #then publish linear -AK, PA4
+            #     time.sleep(1)
+
+            rate.sleep()
+
+    except rospy.ROSInterruptException:
+        rospy.logerr("ROS node interrupted.")
+
+if __name__ == "__main__":
+    """Run the main function."""
+    
+    main()
