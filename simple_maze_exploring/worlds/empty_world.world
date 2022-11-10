@@ -23,7 +23,7 @@ interval_sim 100  # simulation timestep in milliseconds
 # make 10 bots
 turtlebot
 (
-  pose [ 2.0 2.0 0.0 0.0 ]
+  pose [ 2.5 2.0 0.0 0.0 ]
   name "tb_2"
   color "black"
 )
