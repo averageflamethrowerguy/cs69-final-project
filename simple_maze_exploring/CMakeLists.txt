@@ -55,6 +55,8 @@ include_directories(
 
 catkin_install_python(PROGRAMS
   nodes/simple_exploration
+  nodes/explorer
+  nodes/robot_detector
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

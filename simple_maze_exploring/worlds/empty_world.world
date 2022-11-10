@@ -20,19 +20,24 @@ define floorplan model
 resolution 0.02
 interval_sim 100  # simulation timestep in milliseconds
 
-# make 10 bots
+#NOTE: ROBOT COLOR SCHEME
+#IN ORDER TO DETECT ROBOTS, there is a specific scheme implemented for now, as follows:
+#robot_0 -> red
+#robot_1 -> green
+#robot_2 -> blue
+
 turtlebot
 (
   pose [ 2.5 2.0 0.0 0.0 ]
-  name "tb_2"
-  color "black"
+  name "robot_0"
+  color "red"
 )
 
 turtlebot
 (
   pose [ 10.0 6.0 0.0 0.0 ]
-  name "tb_1"
-  color "black"
+  name "robot_1"
+  color "green"
 )
 
 

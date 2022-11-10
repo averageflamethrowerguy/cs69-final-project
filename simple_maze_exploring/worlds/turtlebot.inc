@@ -1,3 +1,17 @@
+define img camera
+(
+  # laser properties
+  resolution [ 32 32 ]
+  range [ 0.2 8.0 ]
+  fov [ 70.0 40.0 ]
+  pantilt [ 0.0 0.0 ]
+
+  # model properties
+  size [ 0.1 0.07 0.05 ]
+  color "black"
+  watts 100.0 # TODO find watts for sony pan-tilt camera
+)
+
 define kinect ranger
 (
   sensor
@@ -24,4 +38,6 @@ define turtlebot position
   color "gray"
   
   kinect(pose [ -0.1 0.0 -0.11 0.0 ])
+
+  img(pose [ 0.1 0.0 -0.11 0.0 ])
 )
