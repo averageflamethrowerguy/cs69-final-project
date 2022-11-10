@@ -53,8 +53,8 @@ include_directories(
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
 
-catkin_install_python(PROGRAMS 
-  nodes/simple_flocking
+catkin_install_python(PROGRAMS
+  nodes/simple_exploration
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
