@@ -7,14 +7,6 @@
   <!-- Define robot names -->
   <arg name="tb3_0" default="robot_0"/>
   <arg name="tb3_1" default="robot_1"/>
-  <arg name="tb3_2" default="robot_2"/>
-  <arg name="tb3_3" default="robot_3"/>
-  <arg name="tb3_4" default="robot_4"/>
-  <arg name="tb3_5" default="robot_5"/>
-  <arg name="tb3_6" default="robot_6"/>
-  <arg name="tb3_7" default="robot_7"/>
-  <arg name="tb3_8" default="robot_8"/>
-  <arg name="tb3_9" default="robot_9"/>
 
   <!-- <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" /> -->
