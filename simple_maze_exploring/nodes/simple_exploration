@@ -12,7 +12,7 @@ from nav_msgs.msg import Odometry # message for odometry (robot position)
 from tf.transformations import euler_from_quaternion
 
 # Constants.
-FREQUENCY = 0.2 #Hz.
+FREQUENCY = 10 #Hz.
 LINEAR_VELOCITY = 0.15 # m/s
 ANGULAR_VELOCITY = math.pi/4 # rad/s
 LASER_ANGLE_FRONT = 0 # radians
@@ -137,7 +137,7 @@ def main():
     try:
         while not rospy.is_shutdown():
             rate = rospy.Rate(FREQUENCY)
-            simple_exploration.rotate_in_place(math.pi/2)
+            simple_exploration.rotate_in_place(math.pi/4)
             simple_exploration.move_forward(5)
             rate.sleep()
     except rospy.ROSInterruptException:
