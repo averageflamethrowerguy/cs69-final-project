@@ -51,6 +51,7 @@ import rospy # module for ROS APIs
 from geometry_msgs.msg import Twist # message type for cmd_vel
 from sensor_msgs.msg import LaserScan # message type for scan
 from nav_msgs.msg import Odometry #message type for odom 
+from nav_msgs.msg import OccupancyGrid # Message type for map data
 
 
 from simple_flocking.simple_motion import SimpleMotion
@@ -68,8 +69,9 @@ DEFAULT_POS_TOPIC = 'pos'
 
 class Explorer():
     def __init__(self, linear_velocity=LINEAR_VELOCITY, angular_velocity=ANGULAR_VELOCITY):
-        """Constructor."""
-
+        """Constructor."""\
+        # Get robot name and node namespace
+        self.robot_name = rospy.get_param("~robot_name") 
         curr = rospy.get_namespace()        
         # Setting up publishers/subscribers.
         self._cmd_pub = rospy.Publisher(DEFAULT_CMD_VEL_TOPIC, Twist, queue_size=1)
@@ -77,6 +79,9 @@ class Explorer():
         # Setting up subscriber.
         self._laser_sub = rospy.Subscriber(DEFAULT_SCAN_TOPIC, LaserScan, self._laser_callback, queue_size=1)
         self._odom_sub = rospy.Subscriber(curr + DEFAULT_ODOM_TOPIC , Odometry, self._odom_callback, queue_size=1)
+
+        # Setting up map subsciber (gets map generated from gmapping)
+        self._map_sub = rospy.Subscriber("/%s/map" % self.robot_name, OccupancyGrid, self._map_callback, queue_size=1)
 
         # Other variables.
         self.linear_velocity = linear_velocity # Constant linear velocity set.
@@ -156,7 +161,11 @@ class Explorer():
         else:
             vel = abs(goal[0] - robot_map_pos[0])
         return goal,vel
-
+    
+    def _map_callback(self, msg):
+        print("------------------------GOT MAP MESSAGE------------------------")
+        # TODO(alex / abby): Parse Occupancy Grid message (msg) and do explorer stuff
+    
     def explore(self):
         '''
         - robot rotates a full rotation to see its immediate surroundings
