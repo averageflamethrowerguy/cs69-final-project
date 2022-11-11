@@ -86,6 +86,7 @@ void MapMerge::topicSubscribing()
 
   for (const auto& topic : topic_infos) {
     // we check only map topic
+//    std::cout << "Checking topic: " << topic.name << std::endl;
     if (!isRobotMapTopic(topic)) {
       continue;
     }
