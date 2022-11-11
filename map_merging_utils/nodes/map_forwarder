@@ -11,8 +11,12 @@ from std_msgs.msg import String
 import json
 from nav_msgs.msg import OccupancyGrid  # Message type for map data
 
+# Format: /robot_0/map
 OCCUPANCY_GRID_IN_TOPIC = "/map"
+# Format: /robot_0/updated_map
 OCCUPANCY_GRID_UPDATED_TOPIC = "/updated_map"
+# Format: /robot_0/robot_0/current_map -- the first robot_0 is the namespace to update, second is the namespace doing
+# the updating
 OCCUPANCY_GRID_OUT_TOPIC = "/current_map"
 
 
@@ -26,11 +30,14 @@ class MapForwarder:
         self.different_from_gmapping = False  # set this to True when we receive a message on /updated_map
 
         # set up publishers and subscribers
-        self.gmapping_sub = rospy.Subscriber(robot_name + OCCUPANCY_GRID_IN_TOPIC, OccupancyGrid,
+        print("/" + robot_name + OCCUPANCY_GRID_IN_TOPIC)
+        self.gmapping_sub = rospy.Subscriber("/" + robot_name + OCCUPANCY_GRID_IN_TOPIC, OccupancyGrid,
                                              self.gmapping_callback)
-        self.updates_sub = rospy.Subscriber(robot_name + OCCUPANCY_GRID_UPDATED_TOPIC, OccupancyGrid,
+        self.updates_sub = rospy.Subscriber("/" + robot_name + OCCUPANCY_GRID_UPDATED_TOPIC, OccupancyGrid,
                                             self.updated_callback)
         self.current_pub = rospy.Publisher(robot_name + OCCUPANCY_GRID_OUT_TOPIC, OccupancyGrid, queue_size=1)
+
+        print("MAP_FORWARDER: finished initialization")
 
     def gmapping_callback(self, msg):
         """
@@ -38,6 +45,8 @@ class MapForwarder:
 
         We assume the two maps have the same origin and resolution.
         """
+        print("GMAPPING_CALLBACK: hit gmapping callback")
+
         if not self.different_from_gmapping:
             self.current_header = msg.header
             self.current_grid = msg.data
@@ -90,7 +99,9 @@ class MapForwarder:
 
 
 if __name__ == "__main__":
-    rospy.init_node('merge_handler')
+    rospy.init_node('map_forwarder')
+    rospy.sleep(1)
+    print("MAP_FORWARDER: starting up")
     robot_name = rospy.get_param("robot_name")
     handler = MapForwarder(robot_name)
     rospy.spin()
