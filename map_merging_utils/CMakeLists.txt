@@ -5,7 +5,7 @@
 ## Set minimum required version of cmake, project name and compile options ##
 #############################################################################
 cmake_minimum_required(VERSION 2.8.3)
-project(map_merging)
+project(map_merging_utils)
 
 ###########################################################################
 ## Find catkin packages and libraries for catkin and system dependencies ##

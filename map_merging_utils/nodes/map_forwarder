@@ -20,6 +20,7 @@ class MapForwarder:
     def __init__(self, robot_name):
         self.robot_name = robot_name
 
+        self.current_header = None
         self.current_grid = None
         self.current_metadata = None
         self.different_from_gmapping = False  # set this to True when we receive a message on /updated_map
@@ -38,6 +39,7 @@ class MapForwarder:
         We assume the two maps have the same origin and resolution.
         """
         if not self.different_from_gmapping:
+            self.current_header = msg.header
             self.current_grid = msg.data
             self.current_metadata = msg.info
         else:
@@ -48,6 +50,7 @@ class MapForwarder:
                 print("GMAPPING_CALLBACK: Origin mismatch! " + str(msg.info.origin) + ", " + str(self.current_metadata.origin))
 
             else:
+                new_header = self.current_header
                 new_metadata = self.current_grid
                 new_grid = self.current_metadata
 
@@ -60,11 +63,13 @@ class MapForwarder:
                             new_grid[row_id * new_metadata.info.width + col_id] = msg.data[
                                 row_id * msg.info.width + col_id]
 
+                self.current_header = new_header
                 self.current_grid = new_grid
                 self.current_metadata = new_metadata
 
         # publish the current grid
         grid = OccupancyGrid()
+        grid.header = self.current_header
         grid.info = self.current_metadata
         grid.data = self.current_grid
         self.current_pub.publish(grid)

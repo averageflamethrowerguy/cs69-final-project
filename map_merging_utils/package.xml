@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!-- Full information here http://wiki.ros.org/catkin/package.xml -->
 <package format="2">
-  <name>map_merging</name>
+  <name>map_merging_utils</name>
   <version>0.1.0</version>
   <description>
     ROS package for merging the maps of two robots

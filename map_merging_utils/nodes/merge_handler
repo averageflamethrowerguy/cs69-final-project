@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+# The line above is important so that this file is interpreted with Python when running it.
+# merge, written by Elliot Potter
+# Oct 2022, with other code used from last fall
+
+# Import of python modules.
+import math  # use of pi.
+import tf  # library for transformations
+import rospy  # module for ROS APIs
+from std_msgs.msg import String
+import json
+from nav_msgs.msg import OccupancyGrid  # Message type for map data
+
+MERGE_SIGNAL_TOPIC = "/merge"
+OCCUPANCY_GRID_IN_TOPIC = "/current_map"
+OCCUPANCY_GRID_OUT_TOPIC = "/updated_map"
+
+
+class MergeHandler:
+    def __init__(self, robot_count):
+        self.robot_count = robot_count
+
+        self.map_listeners = []
+        self.updated_map_publishers = []
+        self.current_maps = []
+
+        rospy.Subscriber(MERGE_SIGNAL_TOPIC, String, self.merge_signal_callback)
+
+        # create subscribers and publishers for the
+        for i in range(robot_count):
+            self.map_listeners.append(
+                rospy.Subscriber("/robot_" + str(i) + OCCUPANCY_GRID_IN_TOPIC, OccupancyGrid, self.map_callback)
+            )
+            self.updated_map_publishers.append(
+                rospy.Publisher("/robot_" + str(i) + OCCUPANCY_GRID_OUT_TOPIC, OccupancyGrid, queue_size=1)
+            )
+            self.current_maps.append(None)
+
+    def merge_signal_callback(self, msg):
+        """Receives a merge signal -- tells the merge module to merge two of the maps"""
+        # TODO -- decode the json
+        # TODO -- get the maps from the map arrays
+        # TODO -- call the helper function to merge two maps
+
+
+
+
+if __name__ == "__main__":
+    rospy.init_node('merge_handler')
+    robot_count_outer = rospy.get_param("robot_count")
+    handler = MergeHandler(robot_count_outer)
+    rospy.spin()
