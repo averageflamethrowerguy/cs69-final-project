@@ -21,11 +21,15 @@ OCCUPANCY_GRID_OUT_TOPIC = "/current_map"
 
 
 class MergeHandler:
-    def __init__(self, robot_count):
+    def __init__(self, robot_count, init_poses):
         self.robot_count = robot_count
+        self.init_poses = init_poses
 
         self.map_listeners = []
         self.updated_map_publishers = []
+        # the following publishers form a matrix of publishers to each robot -- 100 publishers for 10 robots
+        # it is used instead of updated_map_publishers if init_poses is True
+        self.updated_map_publishers_unique_namespaces = []
         self.current_maps = []
 
         rospy.Subscriber(MERGE_SIGNAL_TOPIC, String, self.merge_signal_callback)
@@ -37,10 +41,21 @@ class MergeHandler:
                 rospy.Subscriber(robot_name + robot_name + OCCUPANCY_GRID_IN_TOPIC,
                                  OccupancyGrid, self.construct_callback_wrapper(i))
             )
-            self.updated_map_publishers.append(
-                rospy.Publisher("/updates" + robot_name + OCCUPANCY_GRID_OUT_TOPIC, OccupancyGrid, queue_size=1)
-            )
+
             self.current_maps.append(None)
+
+            if init_poses:
+                publisher_list_temp = []
+                self.updated_map_publishers.append(publisher_list_temp)
+                for j in range(robot_count):
+                    publisher_list_temp.append(
+                        rospy.Publisher("/robot_" + str(j) + robot_name + OCCUPANCY_GRID_OUT_TOPIC,
+                                        OccupancyGrid, queue_size=1)
+                    )
+            else:
+                self.updated_map_publishers.append(
+                    rospy.Publisher("/updates" + robot_name + OCCUPANCY_GRID_OUT_TOPIC, OccupancyGrid, queue_size=1)
+                )
 
     # allows passing the index of the robot into the map callback
     def construct_callback_wrapper(self, index):
@@ -63,8 +78,14 @@ class MergeHandler:
         else:
             # send information to the respective map merge utilities
             # NOTE -- we send 1 to 0 and 0 to 1, so both maps get merged
-            self.updated_map_publishers[ids[0]].publish(map_1)
-            self.updated_map_publishers[ids[1]].publish(map_0)
+            if not self.init_poses:
+                # note the following line SENDS to robot 0
+                self.updated_map_publishers[ids[0]].publish(map_1)
+                self.updated_map_publishers[ids[1]].publish(map_0)
+            else:
+                # note the following line SENDS to robot 0
+                self.updated_map_publishers[ids[1]][ids[0]].publish(map_0)
+                self.updated_map_publishers[ids[0]][ids[1]].publish(map_0)
 
     def map_callback(self, msg, index):
         """Stores the map information in the map array"""
@@ -76,5 +97,6 @@ class MergeHandler:
 if __name__ == "__main__":
     rospy.init_node('merge_handler')
     robot_count_outer = rospy.get_param("/robot_count")
-    handler = MergeHandler(robot_count_outer)
+    init_poses_outer = rospy.get_param("/init_poses")
+    handler = MergeHandler(init_poses_outer, init_poses_outer)
     rospy.spin()

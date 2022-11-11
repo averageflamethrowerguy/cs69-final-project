@@ -91,6 +91,7 @@ void MapMerge::topicSubscribing()
     }
 
     robot_name = robotNameFromTopic(topic.name);
+    std::cout << "Name: " << robot_name << std::endl;
     if (robots_.count(robot_name)) {
       // we already know this robot
       continue;
@@ -116,13 +117,14 @@ void MapMerge::topicSubscribing()
     // no locking here. robots_ are used only in this procedure
     MapSubscription& subscription = subscriptions_.front();
     robots_.insert({robot_name, &subscription});
+    // note -- this pose has not been set up yet!
     subscription.initial_pose = init_pose;
 
     /* subscribe callbacks */
     map_topic = ros::names::append(robot_name, robot_map_topic_);
     map_updates_topic =
         ros::names::append(robot_name, robot_map_updates_topic_);
-    ROS_INFO("Subscribing to MAP topic: %s.", map_topic.c_str());
+    std::cout << "Subscribing to MAP topic: " << map_topic.c_str() << std::endl;
     subscription.map_sub = node_.subscribe<nav_msgs::OccupancyGrid>(
         map_topic, 50,
         [this, &subscription](const nav_msgs::OccupancyGrid::ConstPtr& msg) {
@@ -148,6 +150,7 @@ void MapMerge::mapMerging()
   ROS_DEBUG("Map merging started.");
 
   if (have_initial_poses_) {
+    ROS_DEBUG("We have initial poses!");
     std::vector<nav_msgs::OccupancyGridConstPtr> grids;
     std::vector<geometry_msgs::Transform> transforms;
     grids.reserve(subscriptions_size_);
@@ -165,12 +168,14 @@ void MapMerge::mapMerging()
     pipeline_.setTransforms(transforms.begin(), transforms.end());
   }
 
+  ROS_DEBUG("Attempting to merge maps!");
   nav_msgs::OccupancyGridPtr merged_map;
   {
     std::lock_guard<std::mutex> lock(pipeline_mutex_);
     merged_map = pipeline_.composeGrids();
   }
   if (!merged_map) {
+    ROS_DEBUG("Unable to generate merged map objects!");
     return;
   }
 
@@ -293,11 +298,21 @@ std::string MapMerge::robotNameFromTopic(const std::string& topic)
   return ros::names::parentNamespace(topic);
 }
 
+std::string MapMerge::robotNameFromTopicExtended(const std::string& topic)
+{
+    // gets something like /updates/robot_0
+  std::string ns = ros::names::parentNamespace(topic);
+  // gets something like /updates
+  return ros::names::parentNamespace(ns);
+}
+
 /* identifies topic via suffix */
 bool MapMerge::isRobotMapTopic(const ros::master::TopicInfo& topic)
 {
   /* test whether topic is robot_map_topic_ */
   std::string topic_namespace = ros::names::parentNamespace(topic.name);
+
+//  std::cout << "Topic namespace: " << topic_namespace << ", Robot namespace: " << robot_namespace_ << std::endl;
   bool is_map_topic =
       ros::names::append(topic_namespace, robot_map_topic_) == topic.name;
 
@@ -310,6 +325,8 @@ bool MapMerge::isRobotMapTopic(const ros::master::TopicInfo& topic)
 
   /* we don't want to subcribe on published merged map */
   bool is_our_topic = merged_map_publisher_.getTopic() == topic.name;
+
+//  std::cout << is_occupancy_grid << !is_our_topic << contains_robot_namespace << is_map_topic << std::endl;
 
   return is_occupancy_grid && !is_our_topic && contains_robot_namespace &&
          is_map_topic;

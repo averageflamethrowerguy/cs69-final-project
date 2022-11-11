@@ -93,6 +93,7 @@ private:
   std::mutex pipeline_mutex_;
 
   std::string robotNameFromTopic(const std::string& topic);
+  std::string robotNameFromTopicExtended(const std::string& topic);
   bool isRobotMapTopic(const ros::master::TopicInfo& topic);
   bool getInitPose(const std::string& name, geometry_msgs::Transform& pose);
 

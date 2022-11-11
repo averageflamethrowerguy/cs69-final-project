@@ -3,6 +3,9 @@
   <!-- Name of the world file to use -->
   <arg name="world_file" default="$(find simple_maze_exploring)/worlds/empty_world.world"/>
   <param name="/use_sim_time" value="true"/>
+  <param name="/robot_count"  value="2" />
+  <arg name="/init_poses"  value="true" />
+  <param name="/init_poses"  value="$(arg /init_poses)" />
 
   <!-- Define robot names -->
   <arg name="tb3_0" default="robot_0"/>
@@ -25,9 +28,13 @@
     <remap from="base_scan" to="scan"/>
   </node>
 
+<!--     The merge handler handles forwarding maps from one robot to another, so they may be merged -->
+    <node pkg="map_merging_utils" type="merge_handler" name="merge_handler"  output="screen" />
+
   <!-- Run gmapping on defined robots -->
   <group ns = "$(arg tb3_0)">
-    <param name="robot_name" value="robot_0"/>
+    <arg name="robot_name" value="robot_0"/>
+    <param name="robot_name" value="$(arg robot_name)"/>
 
     <node pkg="gmapping" type="slam_gmapping" name="turtlebot3_slam_gmapping" output="screen">
       <remap from="scan" to="/robot_0/base_scan"/>
@@ -37,10 +44,29 @@
     </node>
 
     <node pkg="map_merging_utils" type="map_forwarder" name="map_forwarder"  output="screen" />
+
+    <node pkg="multirobot_map_merge" type="map_merge" respawn="false" name="map_merge" output="screen">
+        <param name="init_pose_x" value="2.5" />
+        <param name="init_pose_y" value="2.0" />
+        <param name="init_pose_z" value="0.0" />
+        <param name="init_pose_yaw" value="0.0" />
+
+<!--         <param name="robot_map_topic" value="current_map"/> -->
+        <param name="robot_map_topic" value="map"/>
+        <param name="robot_namespace" value="$(arg robot_name)"/>
+        <param name="merged_map_topic" value="/$(arg robot_name)/updated_map"/>
+        <param name="world_frame" value="map"/>
+        <param name="known_init_poses" value="$(arg /init_poses)"/>
+        <param name="merging_rate" value="0.5"/>
+        <param name="discovery_rate" value="0.3"/>
+        <param name="estimation_rate" value="0.1"/>
+        <param name="estimation_confidence" value="1.0"/>
+    </node>
   </group>
 
   <group ns = "$(arg tb3_1)">
-    <param name="robot_name" value="robot_1"/>
+    <arg name="robot_name" value="robot_1"/>
+    <param name="robot_name" value="$(arg robot_name)"/>
 
     <node pkg="gmapping" type="slam_gmapping" name="turtlebot3_slam_gmapping" output="screen">
       <remap from="scan" to="/$(arg tb3_1)/base_scan"/>
@@ -50,6 +76,24 @@
     </node>
 
     <node pkg="map_merging_utils" type="map_forwarder" name="map_forwarder"  output="screen" />
+
+    <node pkg="multirobot_map_merge" type="map_merge" respawn="false" name="map_merge" output="screen">
+        <param name="init_pose_x" value="10.0" />
+        <param name="init_pose_y" value="6.0" />
+        <param name="init_pose_z" value="0.0" />
+        <param name="init_pose_yaw" value="0.0" />
+
+<!--         <param name="robot_map_topic" value="current_map"/> -->
+        <param name="robot_map_topic" value="map"/>
+        <param name="robot_namespace" value="$(arg robot_name)"/>
+        <param name="merged_map_topic" value="/$(arg robot_name)/updated_map"/>
+        <param name="world_frame" value="map"/>
+        <param name="known_init_poses" value="$(arg /init_poses)"/>
+        <param name="merging_rate" value="0.5"/>
+        <param name="discovery_rate" value="0.3"/>
+        <param name="estimation_rate" value="0.1"/>
+        <param name="estimation_confidence" value="1.0"/>
+    </node>
   </group>
 
 </launch>

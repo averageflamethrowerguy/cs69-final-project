@@ -59,9 +59,9 @@ class MapForwarder:
             self.current_grid = msg.data
             self.current_metadata = msg.info
         else:
-            if (msg.info.origin.x != self.current_metadata.origin.x or
-                    msg.info.origin.y != self.current_metadata.origin.y or
-                    msg.info.origin.z != self.current_metadata.origin.z
+            if (msg.info.origin.position.x != self.current_metadata.origin.position.x or
+                    msg.info.origin.position.y != self.current_metadata.origin.position.y or
+                    msg.info.origin.position.z != self.current_metadata.origin.position.z
             ):
                 print("GMAPPING_CALLBACK: Origin mismatch! " + str(msg.info.origin) + ", " + str(self.current_metadata.origin))
 
@@ -96,11 +96,11 @@ class MapForwarder:
         print("UPDATED_CALLBACK: Received updated data!")
 
         self.different_from_gmapping = True
-        if (msg.info.origin.x != self.current_metadata.origin.x or
-                msg.info.origin.y != self.current_metadata.origin.y or
-                msg.info.origin.z != self.current_metadata.origin.z
+        if (msg.info.origin.position.x != self.current_metadata.origin.position.x or
+                msg.info.origin.position.y != self.current_metadata.origin.position.y or
+                msg.info.origin.position.z != self.current_metadata.origin.position.z
         ):
-            print("UPDATED_CALLBACK: Origin mismatch! " + str(msg.info.origin) + ", " + str(self.current_metadata.origin))
+            # print("UPDATED_CALLBACK: Origin mismatch! " + str(msg.info.origin) + ", " + str(self.current_metadata.origin))
         else:
             self.current_grid = msg.data
             self.current_metadata = msg.info
