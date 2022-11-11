@@ -15,8 +15,8 @@ from nav_msgs.msg import OccupancyGrid  # Message type for map data
 OCCUPANCY_GRID_IN_TOPIC = "/map"
 # Format: /robot_0/updated_map
 OCCUPANCY_GRID_UPDATED_TOPIC = "/updated_map"
-# Format: /robot_0/robot_0/current_map -- the first robot_0 is the namespace to update, second is the namespace doing
-# the updating
+# Format: /robot_0/robot_0/current_map -- the first robot_0 is the namespace doing the updating, second is the namespace
+# to update
 OCCUPANCY_GRID_OUT_TOPIC = "/current_map"
 
 
@@ -28,6 +28,7 @@ class MapForwarder:
         self.current_grid = None
         self.current_metadata = None
         self.different_from_gmapping = False  # set this to True when we receive a message on /updated_map
+        self.finished_init = False
 
         # set up publishers and subscribers
         print("/" + robot_name + OCCUPANCY_GRID_IN_TOPIC)
@@ -35,8 +36,11 @@ class MapForwarder:
                                              self.gmapping_callback)
         self.updates_sub = rospy.Subscriber("/" + robot_name + OCCUPANCY_GRID_UPDATED_TOPIC, OccupancyGrid,
                                             self.updated_callback)
-        self.current_pub = rospy.Publisher(robot_name + OCCUPANCY_GRID_OUT_TOPIC, OccupancyGrid, queue_size=1)
+        self.current_pub = rospy.Publisher("/" + robot_name + "/" + robot_name + OCCUPANCY_GRID_OUT_TOPIC,
+                                           OccupancyGrid, queue_size=1)
 
+        rospy.sleep(0.5)
+        self.finished_init = True
         print("MAP_FORWARDER: finished initialization")
 
     def gmapping_callback(self, msg):
@@ -46,6 +50,9 @@ class MapForwarder:
         We assume the two maps have the same origin and resolution.
         """
         print("GMAPPING_CALLBACK: hit gmapping callback")
+
+        if not self.finished_init:
+            rospy.sleep(0.5)
 
         if not self.different_from_gmapping:
             self.current_header = msg.header
@@ -81,6 +88,7 @@ class MapForwarder:
         grid.header = self.current_header
         grid.info = self.current_metadata
         grid.data = self.current_grid
+        print("GMAPPING_CALLBACK: Publishing...!")
         self.current_pub.publish(grid)
 
     def updated_callback(self, msg):
