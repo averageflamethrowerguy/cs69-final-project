@@ -59,29 +59,28 @@ class MapForwarder:
             self.current_grid = msg.data
             self.current_metadata = msg.info
         else:
-            if (msg.info.origin.position.x != self.current_metadata.origin.position.x or
-                    msg.info.origin.position.y != self.current_metadata.origin.position.y or
-                    msg.info.origin.position.z != self.current_metadata.origin.position.z
-            ):
-                print("GMAPPING_CALLBACK: Origin mismatch! " + str(msg.info.origin) + ", " + str(self.current_metadata.origin))
+            new_header = self.current_header
+            new_metadata = self.current_grid
+            new_grid = self.current_metadata
 
-            else:
-                new_header = self.current_header
-                new_metadata = self.current_grid
-                new_grid = self.current_metadata
+            # if the new data explores unexplored space, edit those cells in the current matrix
+            for row_id in range(msg.info.height):
+                for col_id in range(msg.info.width):
+                    y_loc = row_id * msg.info.resolution + msg.info.origin.position.y
+                    x_loc = row_id * msg.info.resolution + msg.info.origin.position.x
 
-                # if the new data explores unexplored space, edit those cells
-                for row_id in range(msg.info.height):
-                    for col_id in range(msg.info.width):
-                        if (new_grid[row_id * new_metadata.info.width + col_id] == -1 and
-                                msg.data[row_id * msg.info.width + col_id] != -1
-                        ):
-                            new_grid[row_id * new_metadata.info.width + col_id] = msg.data[
-                                row_id * msg.info.width + col_id]
+                    new_row = (y_loc - new_metadata.origin.position.y) / new_metadata.resolution
+                    new_col = (x_loc - new_metadata.origin.position.x) / new_metadata.resolution
 
-                self.current_header = new_header
-                self.current_grid = new_grid
-                self.current_metadata = new_metadata
+                    if (new_grid[new_row * new_metadata.info.width + new_col] == -1 and
+                            msg.data[row_id * msg.info.width + col_id] != -1
+                    ):
+                        new_grid[new_row * new_metadata.info.width + new_col] = msg.data[
+                            row_id * msg.info.width + col_id]
+
+            self.current_header = new_header
+            self.current_grid = new_grid
+            self.current_metadata = new_metadata
 
         # publish the current grid
         grid = OccupancyGrid()
@@ -100,10 +99,28 @@ class MapForwarder:
                 msg.info.origin.position.y != self.current_metadata.origin.position.y or
                 msg.info.origin.position.z != self.current_metadata.origin.position.z
         ):
-            # print("UPDATED_CALLBACK: Origin mismatch! " + str(msg.info.origin) + ", " + str(self.current_metadata.origin))
+            print("UPDATED_CALLBACK: Origin mismatch!")
+            # NOTE -- this is NOT general, but multirobot_map_merge seems to give origin=0 results, which are fine
+            # if we just exchange the position of one for the other
+            # print(msg.info)
+            # print(self.current_metadata)
+            # TODO -- neither map starts centered!
+
+            msg.info.origin.position.x = self.current_metadata.origin.position.x - 0.5*(msg.info.width - self.current_metadata.width) * msg.info.resolution
+            msg.info.origin.position.y = self.current_metadata.origin.position.y - 0.5*(msg.info.height - self.current_metadata.height) * msg.info.resolution
+            self.current_metadata = msg.info
+            self.current_grid = msg.data
         else:
             self.current_grid = msg.data
             self.current_metadata = msg.info
+
+        # publish the current grid
+        grid = OccupancyGrid()
+        grid.header = self.current_header
+        grid.info = self.current_metadata
+        grid.data = self.current_grid
+        print("UPDATED_CALLBACK: Publishing...!")
+        self.current_pub.publish(grid)
 
 
 if __name__ == "__main__":
