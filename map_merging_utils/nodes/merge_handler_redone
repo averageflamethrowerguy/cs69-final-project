@@ -1,0 +1,147 @@
+#!/usr/bin/env python
+# The line above is important so that this file is interpreted with Python when running it.
+# merge, written by Elliot Potter
+# Nov 2022, with other code used from last fall
+
+# Import of python modules.
+import math  # use of pi.
+import tf  # library for transformations
+import rospy  # module for ROS APIs
+from std_msgs.msg import String
+import json
+import numpy
+from nav_msgs.msg import OccupancyGrid  # Message type for map data
+
+MERGE_SIGNAL_TOPIC = "/merge"
+# Format: /robot_0/robot_0/current_map -- the first robot_0 is the namespace to update, second is the namespace doing
+# the updating
+OCCUPANCY_GRID_IN_TOPIC = "/current_map"
+# Format: /updates/robot_0/current_map -- this allows us to sniff /robot_0/current_map to subscribe to both the standard
+# and update topics
+OCCUPANCY_GRID_OUT_TOPIC = "/updated_map"
+
+
+class MergeHandler:
+    def __init__(self, robot_count, init_poses):
+        self.robot_count = robot_count
+        self.init_poses = init_poses
+
+        print("INIT POSES: " + str(self.init_poses) + ", ROBOT_COUNT: " + str(self.robot_count))
+
+        self.map_listeners = []
+        self.updated_map_publishers = []
+        # the following publishers form a matrix of publishers to each robot -- 100 publishers for 10 robots
+        # it is used instead of updated_map_publishers if init_poses is True
+        self.updated_map_publishers_unique_namespaces = []
+        self.current_maps = []
+
+        rospy.Subscriber(MERGE_SIGNAL_TOPIC, String, self.merge_signal_callback)
+
+        # create subscribers and publishers for the
+        for i in range(robot_count):
+            robot_name = "/robot_" + str(i)
+            self.map_listeners.append(
+                rospy.Subscriber(robot_name + OCCUPANCY_GRID_IN_TOPIC,
+                                 OccupancyGrid, self.construct_callback_wrapper(i))
+            )
+
+            self.current_maps.append(None)
+
+            self.updated_map_publishers.append(
+                rospy.Publisher(robot_name + OCCUPANCY_GRID_OUT_TOPIC, OccupancyGrid, queue_size=1)
+            )
+
+    # allows passing the index of the robot into the map callback
+    def construct_callback_wrapper(self, index):
+        return lambda msg: self.map_callback(msg, index)
+
+    def merge_signal_callback(self, msg):
+        """Receives a merge signal -- tells the merge module to merge two of the maps"""
+        print("MERGE_CALLBACK: got a request to merge two data streams")
+        # decode the json
+        data = json.loads(msg.data)
+        ids = data["robot_ids"]
+
+        # get the maps from the map arrays
+        map_0_unmerged = self.current_maps[ids[0]]
+        map_1_unmerged = self.current_maps[ids[1]]
+
+        if not map_0_unmerged or not map_1_unmerged:
+            print("MERGE_SIGNAL_CALLBACK: Cannot merge, one of the two maps is None")
+            return
+        else:
+            # send information to the respective map merge utilities
+            # NOTE -- we send 1 to 0 and 0 to 1, so both maps get merged
+
+            map_0 = self.merge_two_maps(map_0_unmerged, map_1_unmerged)
+            map_1 = self.merge_two_maps(map_1_unmerged, map_0_unmerged)
+
+            # note the following line SENDS to robot 0
+            print("Sending out the new maps!")
+            self.updated_map_publishers[ids[0]].publish(map_0)
+            self.updated_map_publishers[ids[1]].publish(map_1)
+
+    def map_callback(self, msg, index):
+        """Stores the map information in the map array"""
+        print("MAP_CALLBACK: got a message")
+        print("MAP_CALLBACK: robot id: " + str(index))
+        self.current_maps[index] = msg
+
+    def merge_two_maps(self, map_1, map_2):
+        """
+        Merges two maps, such that the output map has the same metadata as map_1, but all the explored spaces of
+        both map_1 and map_2
+        """
+        new_map = map_1
+
+        temp_grid = numpy.zeros(map_1.info.height * map_1.info.width)
+
+        # copies all of map_1 into the temp grid
+        for i in range(map_1.info.height * map_1.info.width):
+            temp_grid[i] = map_1.data[i]
+
+        print("finished copy step")
+
+        # Easy case: same origin, resolution, height, width
+        if (map_1.info.origin.position.x == map_2.info.origin.position.x and
+                map_1.info.origin.position.y == map_2.info.origin.position.y and
+                map_1.info.width == map_2.info.width and
+                map_1.info.height == map_2.info.height
+        ):
+            print("Easy case!")
+            for i in range(map_1.info.height * map_1.info.width):
+                if temp_grid[i] == -1:
+                    temp_grid[i] = map_1.data[i]
+
+        # Hard case:
+        # NOTE -- this doesn't QUITE work -- 2 off
+        else:
+            # works over map_2, copying it over
+            # assumes the two grids are axis-aligned
+            for row_id in range(map_2.info.height):
+                y_val = map_2.info.origin.position.y + row_id*map_2.info.resolution
+                new_row = int((y_val - map_1.info.origin.position.y) / map_1.info.resolution)
+
+                x_val = map_2.info.origin.position.x
+                for col_id in range(map_2.info.width):
+                    x_val += map_2.info.resolution
+
+                    new_col = int((x_val - map_1.info.origin.position.x) / map_1.info.resolution)
+
+                    if 0 <= new_row < map_1.info.height and 0 <= new_col < map_1.info.width:
+                        if temp_grid[new_row*map_1.info.width + new_col] == -1:
+                            temp_grid[new_row*map_1.info.width + new_col] = map_2.data[row_id*map_2.info.width + col_id]
+
+        print("finished iteration step")
+
+        new_map.data = temp_grid
+        return new_map
+
+
+
+if __name__ == "__main__":
+    rospy.init_node('merge_handler')
+    robot_count_outer = rospy.get_param("/robot_count")
+    init_poses_outer = rospy.get_param("/init_poses")
+    handler = MergeHandler(robot_count_outer, init_poses_outer)
+    rospy.spin()

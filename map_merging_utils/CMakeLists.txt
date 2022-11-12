@@ -1,10 +1,11 @@
 ## For full information http://wiki.ros.org/catkin/CMakeLists.txt 
+# Used this tutorial to compile actions: https://roboticsbackend.com/ros-create-custom-action/
 
 #############################################################################
 ## Set minimum required version of cmake, project name and compile options ##
 #############################################################################
 cmake_minimum_required(VERSION 2.8.3)
-project(simple_maze_exploring)
+project(map_merging_utils)
 
 ###########################################################################
 ## Find catkin packages and libraries for catkin and system dependencies ##
@@ -12,6 +13,9 @@ project(simple_maze_exploring)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   geometry_msgs
+  actionlib_msgs
+  std_msgs
+  message_generation
 )
 
 ##########################################
@@ -53,9 +57,10 @@ include_directories(
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
 
-catkin_install_python(PROGRAMS
-  nodes/explorer
-  nodes/robot_detector
+catkin_install_python(PROGRAMS 
+  nodes/map_forwarder
+  nodes/merge_handler
+  nodes/merge_signaller
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
