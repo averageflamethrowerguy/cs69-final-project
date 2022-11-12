@@ -48,7 +48,7 @@ class MapForwarder:
         """
         We receive a new occupancy grid on the gmapping topic: we want to merge it with the current grid
 
-        We assume the two maps have the same origin and resolution.
+        We assume the two maps have the same origin, resolution and size
         """
         print("GMAPPING_CALLBACK: hit gmapping callback")
 
@@ -61,28 +61,23 @@ class MapForwarder:
             self.current_metadata = msg.info
         else:
             new_header = self.current_header
-            new_metadata = self.current_grid
-            new_grid = self.current_metadata
+            new_metadata = self.current_metadata
+            new_grid = self.current_grid
 
-            # if the new data explores unexplored space, edit those cells in the current matrix
-            for row_id in range(msg.info.height):
-                for col_id in range(msg.info.width):
-                    y_loc = row_id * msg.info.resolution + msg.info.origin.position.y
-                    x_loc = row_id * msg.info.resolution + msg.info.origin.position.x
+            temp_grid = numpy.zeros(new_metadata.height * new_metadata.width)
+            # copies all of map_1 into the temp grid
+            for i in range(new_metadata.height * new_metadata.width):
+                temp_grid[i] = new_grid[i]
 
-                    new_row = (y_loc - new_metadata.origin.position.y) / new_metadata.resolution
-                    new_col = (x_loc - new_metadata.origin.position.x) / new_metadata.resolution
-
-                    print("Old: " + str((row_id, col_id)) + ", New: " + str((new_row, new_col)))
-                    if (new_grid[new_row * new_metadata.info.width + new_col] == -1 and
-                            msg.data[row_id * msg.info.width + col_id] != -1
-                    ):
-                        new_grid[new_row * new_metadata.info.width + new_col] = msg.data[
-                            row_id * msg.info.width + col_id]
-
-            self.current_header = new_header
-            self.current_grid = new_grid
-            self.current_metadata = new_metadata
+            # Easy case: same origin, resolution, height, width
+            if (new_metadata.origin.position.x == new_metadata.origin.position.x and
+                    new_metadata.origin.position.y == new_metadata.origin.position.y and
+                    new_metadata.width == new_metadata.width and
+                    new_metadata.height == new_metadata.height
+            ):
+                for i in range(new_metadata.height * new_metadata.width):
+                    if temp_grid[i] == -1:
+                        temp_grid[i] = msg.data[i]
 
         # publish the current grid
         grid = OccupancyGrid()
@@ -95,36 +90,10 @@ class MapForwarder:
     def updated_callback(self, msg):
         """This is the most up-to-date map, which overrides the other grid / metadata stuff we have loaded"""
         print("UPDATED_CALLBACK: Received updated data!")
-
         self.different_from_gmapping = True
-        if (msg.info.origin.position.x != self.current_metadata.origin.position.x or
-                msg.info.origin.position.y != self.current_metadata.origin.position.y or
-                msg.info.origin.position.z != self.current_metadata.origin.position.z
-        ):
-            print("UPDATED_CALLBACK: Origin mismatch!")
-            # NOTE -- this is NOT general, but multirobot_map_merge seems to give origin=0 results, which are fine
-            # if we just exchange the position of one for the other
-            # print(msg.info)
-            # print(self.current_metadata)
-            # TODO -- neither map starts centered!
 
-            temp_grid = numpy.zeros(self.current_metadata.height * self.current_metadata.width)
-            print((self.current_metadata.height, self.current_metadata.width, msg.info.height, msg.info.width))
-            for row_id in range(self.current_metadata.height):
-                for col_id in range(self.current_metadata.width):
-                    if row_id < msg.info.height and col_id < msg.info.width:
-                        temp_grid[row_id*self.current_metadata.width + col_id] = msg.data[row_id*msg.info.width + col_id]
-                    else:
-                        temp_grid[row_id*self.current_metadata.width + col_id] = -1
-                        
-            self.current_grid = temp_grid
-
-            msg.info.origin.position.x = self.current_metadata.origin.position.x - 0.5 * (msg.info.width - self.current_metadata.width) * msg.info.resolution
-            msg.info.origin.position.y = self.current_metadata.origin.position.y - 0.5 * (msg.info.height - self.current_metadata.height) * msg.info.resolution
-            self.current_metadata = msg.info
-        else:
-            self.current_grid = msg.data
-            self.current_metadata = msg.info
+        self.current_grid = msg.data
+        self.current_metadata = msg.info
 
         # publish the current grid
         grid = OccupancyGrid()

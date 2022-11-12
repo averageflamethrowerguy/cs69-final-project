@@ -102,21 +102,35 @@ class MergeHandler:
 
         print("finished copy step")
 
-        # works over map_2, copying it over
-        # assumes the two grids are axis-aligned
-        for row_id in range(map_2.info.height):
-            y_val = map_2.info.origin.position.y + row_id*map_2.info.resolution
-            new_row = int((y_val - map_1.info.origin.position.y) / map_1.info.resolution)
+        # Easy case: same origin, resolution, height, width
+        if (map_1.info.origin.position.x == map_2.info.origin.position.x and
+                map_1.info.origin.position.y == map_2.info.origin.position.y and
+                map_1.info.width == map_2.info.width and
+                map_1.info.height == map_2.info.height
+        ):
+            print("Easy case!")
+            for i in range(map_1.info.height * map_1.info.width):
+                if temp_grid[i] == -1:
+                    temp_grid[i] = map_1.data[i]
 
-            x_val = map_2.info.origin.position.x
-            for col_id in range(map_2.info.width):
-                x_val += map_2.info.resolution
+        # Hard case:
+        # NOTE -- this doesn't QUITE work -- 2 off
+        else:
+            # works over map_2, copying it over
+            # assumes the two grids are axis-aligned
+            for row_id in range(map_2.info.height):
+                y_val = map_2.info.origin.position.y + row_id*map_2.info.resolution
+                new_row = int((y_val - map_1.info.origin.position.y) / map_1.info.resolution)
 
-                new_col = int((x_val - map_1.info.origin.position.x) / map_1.info.resolution)
+                x_val = map_2.info.origin.position.x
+                for col_id in range(map_2.info.width):
+                    x_val += map_2.info.resolution
 
-                if 0 <= new_row < map_1.info.height and 0 <= new_col < map_1.info.width:
-                    if temp_grid[new_row*map_1.info.width + new_col] == -1:
-                        temp_grid[new_row*map_1.info.width + new_col] = map_2.data[row_id*map_2.info.width + col_id]
+                    new_col = int((x_val - map_1.info.origin.position.x) / map_1.info.resolution)
+
+                    if 0 <= new_row < map_1.info.height and 0 <= new_col < map_1.info.width:
+                        if temp_grid[new_row*map_1.info.width + new_col] == -1:
+                            temp_grid[new_row*map_1.info.width + new_col] = map_2.data[row_id*map_2.info.width + col_id]
 
         print("finished iteration step")
 
