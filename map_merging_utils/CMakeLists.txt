@@ -60,6 +60,7 @@ include_directories(
 catkin_install_python(PROGRAMS 
   nodes/map_forwarder
   nodes/merge_handler
+  nodes/merge_signaller
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

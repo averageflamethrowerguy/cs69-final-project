@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+# The line above is important so that this file is interpreted with Python when running it.
+# merge, written by Elliot Potter
+# Nov 2022
+
+# Import of python modules.
+import math  # use of pi.
+import tf  # library for transformations
+import rospy  # module for ROS APIs
+from std_msgs.msg import String
+import json
+from nav_msgs.msg import OccupancyGrid  # Message type for map data
+
+MERGE_SIGNAL_TOPIC = "/merge"
+
+
+class MergeSignaller:
+    def __init__(self):
+        print("=======================================================================")
+        print("MERGE_SIGNALLER: Initializing!")
+        self.pub = rospy.Publisher(MERGE_SIGNAL_TOPIC, String, queue_size=1)
+        print("MERGE_SIGNALLER: Finished creating publisher!")
+        obj_msg = {"robot_ids": [0, 1]}
+        json_msg = json.dumps(obj_msg)
+        self.str_message = String()
+        self.str_message.data = json_msg
+
+    def message_loop(self):
+        while not rospy.is_shutdown():
+            print("MERGE_SIGNALLER: Publishing the merge message!")
+            self.pub.publish(self.str_message)
+            rospy.sleep(1)
+
+
+if __name__ == "__main__":
+    rospy.init_node('merge_signaller')
+    robot_count_outer = rospy.get_param("/robot_count")
+    init_poses_outer = rospy.get_param("/init_poses")
+    signaller = MergeSignaller()
+    rospy.sleep(5)
+    signaller.message_loop()
+    rospy.spin()

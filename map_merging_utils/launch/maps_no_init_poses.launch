@@ -30,6 +30,7 @@
 
 <!--     The merge handler handles forwarding maps from one robot to another, so they may be merged -->
     <node pkg="map_merging_utils" type="merge_handler" name="merge_handler"  output="screen" />
+    <node pkg="map_merging_utils" type="merge_signaller" name="merge_signaller"  output="screen" />
 
   <!-- Run gmapping on defined robots -->
   <group ns = "$(arg tb3_0)">

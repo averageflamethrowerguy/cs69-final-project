@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # The line above is important so that this file is interpreted with Python when running it.
 # merge, written by Elliot Potter
-# Oct 2022, with other code used from last fall
+# Nov 2022, with other code used from last fall
 
 # Import of python modules.
 import math  # use of pi.
