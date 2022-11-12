@@ -16,7 +16,7 @@ from nav_msgs.msg import OccupancyGrid  # Message type for map data
 OCCUPANCY_GRID_IN_TOPIC = "/map"
 # Format: /robot_0/updated_map
 OCCUPANCY_GRID_UPDATED_TOPIC = "/updated_map"
-# Format: /robot_0/robot_0/current_map -- the first robot_0 is the namespace doing the updating, second is the namespace
+# Format: /robot_0/current_map -- the first robot_0 is the namespace doing the updating, second is the namespace
 # to update
 OCCUPANCY_GRID_OUT_TOPIC = "/current_map"
 
@@ -37,7 +37,7 @@ class MapForwarder:
                                              self.gmapping_callback)
         self.updates_sub = rospy.Subscriber("/" + robot_name + OCCUPANCY_GRID_UPDATED_TOPIC, OccupancyGrid,
                                             self.updated_callback)
-        self.current_pub = rospy.Publisher("/" + robot_name + "/" + robot_name + OCCUPANCY_GRID_OUT_TOPIC,
+        self.current_pub = rospy.Publisher("/" + robot_name + OCCUPANCY_GRID_OUT_TOPIC,
                                            OccupancyGrid, queue_size=1)
 
         rospy.sleep(0.5)
