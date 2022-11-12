@@ -9,6 +9,7 @@ import tf  # library for transformations
 import rospy  # module for ROS APIs
 from std_msgs.msg import String
 import json
+import numpy
 from nav_msgs.msg import OccupancyGrid  # Message type for map data
 
 # Format: /robot_0/map
@@ -72,6 +73,7 @@ class MapForwarder:
                     new_row = (y_loc - new_metadata.origin.position.y) / new_metadata.resolution
                     new_col = (x_loc - new_metadata.origin.position.x) / new_metadata.resolution
 
+                    print("Old: " + str((row_id, col_id)) + ", New: " + str((new_row, new_col)))
                     if (new_grid[new_row * new_metadata.info.width + new_col] == -1 and
                             msg.data[row_id * msg.info.width + col_id] != -1
                     ):
@@ -94,26 +96,36 @@ class MapForwarder:
         """This is the most up-to-date map, which overrides the other grid / metadata stuff we have loaded"""
         print("UPDATED_CALLBACK: Received updated data!")
 
-        # self.different_from_gmapping = True
-        # if (msg.info.origin.position.x != self.current_metadata.origin.position.x or
-        #         msg.info.origin.position.y != self.current_metadata.origin.position.y or
-        #         msg.info.origin.position.z != self.current_metadata.origin.position.z
-        # ):
-        #     print("UPDATED_CALLBACK: Origin mismatch!")
-        #     # NOTE -- this is NOT general, but multirobot_map_merge seems to give origin=0 results, which are fine
-        #     # if we just exchange the position of one for the other
-        #     # print(msg.info)
-        #     # print(self.current_metadata)
-        #     # TODO -- neither map starts centered!
-        #
-        #     msg.info.origin.position.x = self.current_metadata.origin.position.x - 0.5*(msg.info.width - self.current_metadata.width) * msg.info.resolution
-        #     msg.info.origin.position.y = self.current_metadata.origin.position.y - 0.5*(msg.info.height - self.current_metadata.height) * msg.info.resolution
-        #     self.current_metadata = msg.info
-        #     self.current_grid = msg.data
-        # else:
-        #     self.current_grid = msg.data
-        #     self.current_metadata = msg.info
-        #
+        self.different_from_gmapping = True
+        if (msg.info.origin.position.x != self.current_metadata.origin.position.x or
+                msg.info.origin.position.y != self.current_metadata.origin.position.y or
+                msg.info.origin.position.z != self.current_metadata.origin.position.z
+        ):
+            print("UPDATED_CALLBACK: Origin mismatch!")
+            # NOTE -- this is NOT general, but multirobot_map_merge seems to give origin=0 results, which are fine
+            # if we just exchange the position of one for the other
+            # print(msg.info)
+            # print(self.current_metadata)
+            # TODO -- neither map starts centered!
+
+            temp_grid = numpy.zeros(self.current_metadata.height * self.current_metadata.width)
+            print((self.current_metadata.height, self.current_metadata.width, msg.info.height, msg.info.width))
+            for row_id in range(self.current_metadata.height):
+                for col_id in range(self.current_metadata.width):
+                    if row_id < msg.info.height and col_id < msg.info.width:
+                        temp_grid[row_id*self.current_metadata.width + col_id] = msg.data[row_id*msg.info.width + col_id]
+                    else:
+                        temp_grid[row_id*self.current_metadata.width + col_id] = -1
+                        
+            self.current_grid = temp_grid
+
+            msg.info.origin.position.x = self.current_metadata.origin.position.x - 0.5 * (msg.info.width - self.current_metadata.width) * msg.info.resolution
+            msg.info.origin.position.y = self.current_metadata.origin.position.y - 0.5 * (msg.info.height - self.current_metadata.height) * msg.info.resolution
+            self.current_metadata = msg.info
+        else:
+            self.current_grid = msg.data
+            self.current_metadata = msg.info
+
         # publish the current grid
         grid = OccupancyGrid()
         grid.header = self.current_header
