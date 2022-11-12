@@ -51,10 +51,10 @@
         <param name="init_pose_z" value="0.0" />
         <param name="init_pose_yaw" value="0.0" />
 
-<!--         <param name="robot_map_topic" value="current_map"/> -->
-        <param name="robot_map_topic" value="map"/>
-<!--         <param name="robot_namespace" value="$(arg robot_name)"/> -->
-        <param name="robot_namespace" value=""/>
+        <param name="robot_map_topic" value="current_map"/>
+<!--         <param name="robot_map_topic" value="map"/> -->
+        <param name="robot_namespace" value="$(arg robot_name)"/>
+<!--         <param name="robot_namespace" value=""/> -->
         <param name="merged_map_topic" value="/$(arg robot_name)/updated_map"/>
         <param name="world_frame" value="map"/>
         <param name="known_init_poses" value="$(arg /init_poses)"/>
@@ -84,10 +84,10 @@
         <param name="init_pose_z" value="0.0" />
         <param name="init_pose_yaw" value="0.0" />
 
-<!--         <param name="robot_map_topic" value="current_map"/> -->
-        <param name="robot_map_topic" value="map"/>
-<!--         <param name="robot_namespace" value="$(arg robot_name)"/> -->
-        <param name="robot_namespace" value=""/>
+        <param name="robot_map_topic" value="current_map"/>
+<!--         <param name="robot_map_topic" value="map"/> -->
+        <param name="robot_namespace" value="$(arg robot_name)"/>
+<!--         <param name="robot_namespace" value=""/> -->
         <param name="merged_map_topic" value="/$(arg robot_name)/updated_map"/>
         <param name="world_frame" value="map"/>
         <param name="known_init_poses" value="$(arg /init_poses)"/>

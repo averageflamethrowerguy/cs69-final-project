@@ -91,7 +91,8 @@ void MapMerge::topicSubscribing()
       continue;
     }
 
-    robot_name = robotNameFromTopic(topic.name);
+//    robot_name = robotNameFromTopic(topic.name);
+    robot_name = robotNameFromTopicExtended(topic.name);
     std::cout << "Name: " << robot_name << std::endl;
     if (robots_.count(robot_name)) {
       // we already know this robot
@@ -122,10 +123,12 @@ void MapMerge::topicSubscribing()
     subscription.initial_pose = init_pose;
 
     /* subscribe callbacks */
-    map_topic = ros::names::append(robot_name, robot_map_topic_);
+//    map_topic = ros::names::append(robot_name, robot_map_topic_);
+    map_topic = ros::names::append(ros::names::append(robot_name, robot_namespace_), robot_map_topic_);
     map_updates_topic =
         ros::names::append(robot_name, robot_map_updates_topic_);
     std::cout << "Subscribing to MAP topic: " << map_topic.c_str() << std::endl;
+    std::cout << "BOOOO" << std::endl;
     subscription.map_sub = node_.subscribe<nav_msgs::OccupancyGrid>(
         map_topic, 50,
         [this, &subscription](const nav_msgs::OccupancyGrid::ConstPtr& msg) {

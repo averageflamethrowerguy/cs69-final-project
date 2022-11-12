@@ -25,6 +25,8 @@ class MergeHandler:
         self.robot_count = robot_count
         self.init_poses = init_poses
 
+        print("INIT POSES: " + str(self.init_poses) + ", ROBOT_COUNT: " + str(self.robot_count))
+
         self.map_listeners = []
         self.updated_map_publishers = []
         # the following publishers form a matrix of publishers to each robot -- 100 publishers for 10 robots
@@ -48,8 +50,10 @@ class MergeHandler:
                 publisher_list_temp = []
                 self.updated_map_publishers.append(publisher_list_temp)
                 for j in range(robot_count):
+                    topic = "/robot_" + str(j) + robot_name + OCCUPANCY_GRID_OUT_TOPIC
+                    print("Creating publisher: " + topic)
                     publisher_list_temp.append(
-                        rospy.Publisher("/robot_" + str(j) + robot_name + OCCUPANCY_GRID_OUT_TOPIC,
+                        rospy.Publisher(topic,
                                         OccupancyGrid, queue_size=1)
                     )
             else:
@@ -98,5 +102,5 @@ if __name__ == "__main__":
     rospy.init_node('merge_handler')
     robot_count_outer = rospy.get_param("/robot_count")
     init_poses_outer = rospy.get_param("/init_poses")
-    handler = MergeHandler(init_poses_outer, init_poses_outer)
+    handler = MergeHandler(robot_count_outer, init_poses_outer)
     rospy.spin()
