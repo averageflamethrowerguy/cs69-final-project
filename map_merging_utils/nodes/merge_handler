@@ -87,9 +87,9 @@ class MergeHandler:
                 self.updated_map_publishers[ids[0]].publish(map_1)
                 self.updated_map_publishers[ids[1]].publish(map_0)
             else:
-                # note the following line SENDS to robot 0
+                # note the following line SENDS to robot 1
                 self.updated_map_publishers[ids[1]][ids[0]].publish(map_0)
-                self.updated_map_publishers[ids[0]][ids[1]].publish(map_0)
+                self.updated_map_publishers[ids[0]][ids[1]].publish(map_1)
 
     def map_callback(self, msg, index):
         """Stores the map information in the map array"""

@@ -94,26 +94,26 @@ class MapForwarder:
         """This is the most up-to-date map, which overrides the other grid / metadata stuff we have loaded"""
         print("UPDATED_CALLBACK: Received updated data!")
 
-        self.different_from_gmapping = True
-        if (msg.info.origin.position.x != self.current_metadata.origin.position.x or
-                msg.info.origin.position.y != self.current_metadata.origin.position.y or
-                msg.info.origin.position.z != self.current_metadata.origin.position.z
-        ):
-            print("UPDATED_CALLBACK: Origin mismatch!")
-            # NOTE -- this is NOT general, but multirobot_map_merge seems to give origin=0 results, which are fine
-            # if we just exchange the position of one for the other
-            # print(msg.info)
-            # print(self.current_metadata)
-            # TODO -- neither map starts centered!
-
-            msg.info.origin.position.x = self.current_metadata.origin.position.x - 0.5*(msg.info.width - self.current_metadata.width) * msg.info.resolution
-            msg.info.origin.position.y = self.current_metadata.origin.position.y - 0.5*(msg.info.height - self.current_metadata.height) * msg.info.resolution
-            self.current_metadata = msg.info
-            self.current_grid = msg.data
-        else:
-            self.current_grid = msg.data
-            self.current_metadata = msg.info
-
+        # self.different_from_gmapping = True
+        # if (msg.info.origin.position.x != self.current_metadata.origin.position.x or
+        #         msg.info.origin.position.y != self.current_metadata.origin.position.y or
+        #         msg.info.origin.position.z != self.current_metadata.origin.position.z
+        # ):
+        #     print("UPDATED_CALLBACK: Origin mismatch!")
+        #     # NOTE -- this is NOT general, but multirobot_map_merge seems to give origin=0 results, which are fine
+        #     # if we just exchange the position of one for the other
+        #     # print(msg.info)
+        #     # print(self.current_metadata)
+        #     # TODO -- neither map starts centered!
+        #
+        #     msg.info.origin.position.x = self.current_metadata.origin.position.x - 0.5*(msg.info.width - self.current_metadata.width) * msg.info.resolution
+        #     msg.info.origin.position.y = self.current_metadata.origin.position.y - 0.5*(msg.info.height - self.current_metadata.height) * msg.info.resolution
+        #     self.current_metadata = msg.info
+        #     self.current_grid = msg.data
+        # else:
+        #     self.current_grid = msg.data
+        #     self.current_metadata = msg.info
+        #
         # publish the current grid
         grid = OccupancyGrid()
         grid.header = self.current_header
