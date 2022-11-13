@@ -65,6 +65,7 @@ DEFAULT_CMD_VEL_TOPIC = 'cmd_vel'
 DEFAULT_SCAN_TOPIC = 'base_scan'
 DEFAULT_ODOM_TOPIC = 'odom' 
 DEFAULT_POS_TOPIC = 'pos'
+WALL_AVOID_RANGE = 0.3
 #NUM_ROBOTS = 6 # (num_robots is actually one more than this)
 
 class Explorer_Elliot():
@@ -111,9 +112,20 @@ class Explorer_Elliot():
         :return:
         """
         print("------------------------GOT MAP MESSAGE------------------------")
-        temp_grid = np.zeros(msg.info.height * msg.info.width)
-        for i in range(msg.info.height * msg.info.width):
-            temp_grid[i] = msg.data[i]
+        temp_grid = np.copy(msg.data)
+
+        wall_avoid_cells = int(WALL_AVOID_RANGE / msg.info.resolution)
+
+        for row_id in range(msg.info.width):
+            for col_id in range(msg.info.height):
+                # spread 2s out from every 1
+                if temp_grid[row_id*msg.info.height + col_id] == 1:
+                    for i in range(wall_avoid_cells*2 + 1):
+                        row_offset = i - (wall_avoid_cells + 1)
+                        for j in range(wall_avoid_cells*2 + 1):
+                            col_offset = j - (wall_avoid_cells + 1)
+
+
         self.my_map = temp_grid
         self.map_metadata = msg.info
         print("------------------------SET MAP------------------------")

@@ -28,7 +28,7 @@ interval_sim 100  # simulation timestep in milliseconds
 
 turtlebot
 (
-  pose [ 2.5 2.0 0.0 0.0 ]
+  pose [ 2.5 1.0 0.0 0.0 ]
   name "robot_0"
   color "red"
 )
@@ -45,7 +45,7 @@ turtlebot
 floorplan
 (
   name "maze"
-  bitmap "./maze2_big.png"
+  bitmap "./maze.png"
   size [ 30.0 30.0 2.0 ]
   pose [  0.0  0.0 0.0 0.0 ]
 )
