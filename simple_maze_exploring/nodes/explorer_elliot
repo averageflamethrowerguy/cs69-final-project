@@ -44,6 +44,7 @@ import random
 import time
 import tf
 from simple_maze_exploring.bfs import BFS
+from simple_maze_exploring.drive_line import DriveLine
 #import queue
 #from turtle import right # use of pi.
 
@@ -86,6 +87,7 @@ class Explorer():
         self.angular_velocity = angular_velocity # Constant angular velocity set.
 
         self.location = [-31, -31, -31]
+        self.driver = DriveLine()
         self.map_metadata = None
         self.my_map = None
 
@@ -165,6 +167,8 @@ class Explorer():
             }
 
         print("TRACEBACK AFTER REFORMAT: " + str(traceback))
+
+        driver.draw_arbitrary_polygon()
 
 
 def main():
