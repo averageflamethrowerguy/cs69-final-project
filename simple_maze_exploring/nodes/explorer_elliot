@@ -43,6 +43,7 @@ import numpy as np
 import random
 import time
 import tf
+from simple_maze_exploring.bfs import BFS
 #import queue
 #from turtle import right # use of pi.
 
@@ -53,8 +54,6 @@ from sensor_msgs.msg import LaserScan # message type for scan
 from nav_msgs.msg import Odometry #message type for odom 
 from nav_msgs.msg import OccupancyGrid # Message type for map data
 
-
-from simple_flocking.simple_motion import SimpleMotion
 # Constants.
 FREQUENCY = 2 #Hz.
 LINEAR_VELOCITY = 0.2 # m/s
@@ -77,7 +76,6 @@ class Explorer():
         self._cmd_pub = rospy.Publisher(DEFAULT_CMD_VEL_TOPIC, Twist, queue_size=1)
         
         # Setting up subscriber.
-        self._laser_sub = rospy.Subscriber(DEFAULT_SCAN_TOPIC, LaserScan, self._laser_callback, queue_size=1)
         self._odom_sub = rospy.Subscriber(curr + DEFAULT_ODOM_TOPIC , Odometry, self._odom_callback, queue_size=1)
 
         # Setting up map subsciber (gets map generated from gmapping)
@@ -86,9 +84,8 @@ class Explorer():
         # Other variables.
         self.linear_velocity = linear_velocity # Constant linear velocity set.
         self.angular_velocity = angular_velocity # Constant angular velocity set.
-        self._close_obstacle = False # Flag variable that is true if there is a close obstacle.
 
-        self._motion = SimpleMotion()
+        self.location = [-31, -31, -31]
         self.map_metadata = None
         self.my_map = None
 
@@ -97,16 +94,6 @@ class Explorer():
         twist_msg = Twist()
         self._cmd_pub.publish(twist_msg)
 
-    def _laser_callback(self, msg):  
-        """Processing of laser message."""
-        # Access to the index of the measurement in front of the robot.
-        # NOTE: assumption: the one at angle 0 corresponds to the front.
-        i = int((LASER_ANGLE_FRONT - msg.angle_min) / msg.angle_increment)
-        if msg.ranges[i] <= MIN_THRESHOLD_DISTANCE:
-            self._close_obstacle = True
-        else:
-            self._close_obstacle = False
-    
     location = np.array([-31,-31,-31])
     def _odom_callback(self, msg):
         #Processing the odom location message 
@@ -115,8 +102,6 @@ class Explorer():
         self.orient=msg.pose.pose.orientation
         to_add = [self.xpos, self.ypos, self.orient]   #add it to an array 
         self.location = to_add
-
-        self.my_map[int(math.floor(self.xpos)),int(math.floor(self.ypos))] = 1
 
     '''
     def map_merge(self,bot_map):
@@ -133,123 +118,55 @@ class Explorer():
         return my_map
     '''
 
-    def path_in_dir(self, x, y, mp, rpos):
-        
-        i = 1
-        print("BEFORE WEIRD PRINT")
-        print(i, int(rpos[0] + (i * x)), int(rpos[1] + (i * y)))
-
-        # the position to index into within the map
-        map_pos = int(rpos[1] + (i * y)) * self.map_metadata.width + int(rpos[0] + (i * x))
-        while(rpos[1] + (i * y) > 0 and rpos[0] + (i * x) <= 29 and rpos[0] + (i * x) > 0 and rpos[1] + (i * y) <= 29 and mp[map_pos] == 0):
-            i += 1
-        
-        #new_tuple = (i,)
-        return i, (rpos[0] + (i * x), rpos[1] + (i * y))
-
-
-    def calculate_path(self,robot_map_pos, my_map):
-        
-        i = 1
-        max_paths = [None for i in range(4)]
-        # calculate up / left / right / down
-        max_paths[0] = self.path_in_dir(0, 1, my_map, robot_map_pos)
-        max_paths[1] = self.path_in_dir(1, 0, my_map, robot_map_pos)
-        max_paths[2] = self.path_in_dir(0, -1, my_map, robot_map_pos)
-        max_paths[3] = self.path_in_dir(-1, 0, my_map, robot_map_pos)
-
-        max_dir = max(max_paths,key=lambda x: x[0])
-        goal = max_dir[1]
-        vel = 0
-        if max_paths.index(max_dir) % 2 == 0:
-            vel = abs(goal[1] - robot_map_pos[1])
-        else:
-            vel = abs(goal[0] - robot_map_pos[0])
-        return goal,vel
-    
     def _map_callback(self, msg):
+        """
+        Simply saves the map for later use
+        :param msg:             An OccupancyGrid message
+        :return:
+        """
         print("------------------------GOT MAP MESSAGE------------------------")
         temp_grid = np.zeros(msg.info.height * msg.info.width)
         for i in range(msg.info.height * msg.info.width):
             temp_grid[i] = msg.data[i]
         self.my_map = temp_grid
+        self.map_metadata = msg.info
     
     def explore(self):
         '''
-        - robot rotates a full rotation to see its immediate surroundings
-        
-        - if the robot encounters another robot
-            - map merge takes place
-        - for each new area it sees
-            - checks if that area is in its local map
-                - if it is not, it adds it to a group of locations to be explored
-        - robot calculates the longest possible (single direction) route it can take
-        - robot moves along that route and explores each node in the route
-        - robot does so until it encounters something (another robot, wall)
-    
-        - robot continues until it no longer has areas to explore
-            - when it has no new areas to explore
-                - robot moves arbitrarily (i.e. moving until it hits a wall, then turning right and moving again)
-                - robot moves until its laser scan sees an open area or another robot
-        '''        
-        '''flags = np.zeros(len(to_be_visited), dtype = bool)      #to track whether or not an individual location has already been visited
-        for i in range(0,len(to_be_visited)):                   #to initialize locations
-            for j in range(0,len(my_map)):
-                if to_be_visited[i] == my_map[j]:
-                    flags[i] = True
-        
-        to_visit = list()
-        for i in range(0,len(flag)):
-                if flags[i]:
-                    continue
-                else:
-                    to_visit.append(to_be_visited[i])'''
+        Robot does the following:
+        1. TODO -- rotate in a circle to try to find other robots
+        2. bfs to try to find a goal position (i.e., path to nearest accessible unexplored location)
+        3. TODO -- tell the action server to drive to that position
+        '''
         
         print("here")
-        while (self.location[0] == -31):
-            pass
-        curr = rospy.get_namespace()        
+        while self.location[0] == -31 or self.my_map is None:
+            return
+        curr = rospy.get_namespace()
 
-        #calculate longest chain of 0's in the localized array
-        
+        # bfs expects a 2d array rather than a flat array
+        grid_for_search = np.reshape(self.my_map, (self.map_metadata.height, self.map_metadata.width))
+        initial_pos = {"x": 0, "y": 0}
+        print("INITIAL POSE IN NORMAL COORDS: " + str(initial_pos))
+        initial_pos["x"] = int((self.location[0] - self.map_metadata.origin.position.x) / self.map_metadata.resolution)
+        initial_pos["y"] = int((self.location[1] - self.map_metadata.origin.position.y) / self.map_metadata.resolution)
 
-        #robot_x = self.location[0]
-        #robot_y = self.location[1]
-        robot_map_pos = np.array([self.location[0], self.location[1]])
-        max_path = 0
-        max_dir = 0
-        i = 0
-        
-        goal, velo = self.calculate_path(robot_map_pos, self.my_map)
-        print(goal,velo)
+        print("INITIAL POS: " + str(initial_pos))
 
+        bfs = BFS(initial_pos, grid_for_search)
+        traceback = bfs.perform_search(0.1)
+        print("TRACEBACK: " + str(traceback))
 
-        vel = Twist()
-        quat = self.location[2]                                                          #get quaternion of current robot from locations      
-        print(quat)
-        angles = tf.transformations.euler_from_quaternion([quat.x,quat.y,quat.z,quat.w])        #transform quaternion to euler   
-        curr_angle = angles[2]                                                                  #get the current angle of the robot 
-        new_angle = math.atan2(goal[1], goal[0])                                               #get the new angle to go to
-        
-        self._motion.rotate_in_place(new_angle)
-        time.sleep(3)
-        self._motion.move_forward(velo)
-        print(self.my_map)
-        #ang_vel = new_angle - curr_angle
+        # Restores the x-y resolution, rather than the grid resolution
+        for i in range(len(traceback)):
+            traceback[i] = {
+                "x": (traceback[i]["x"] * self.map_metadata.resolution) + self.map_metadata.origin.position.x,
+                "y": (traceback[i]["y"] * self.map_metadata.resolution) + self.map_metadata.origin.position.y,
+            }
 
-        #return velo,ang_vel
-        # vel.angular.z = ang_vel
-        # self._cmd_pub.publish(vel)
-        # #time.sleep(10)
-
-        # vel.angular.z = 0
-        # vel.linear.x = velo
-        # print(vel.linear.x)
-        # self._cmd_pub.publish(vel)
+        print("TRACEBACK AFTER REFORMAT: " + str(traceback))
 
 
-
-     
 def main():
     """Main function."""
 

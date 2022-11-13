@@ -32,7 +32,7 @@
     <!-- NOTE: Only load one exploration node per robot-->
     <!-- Alphonso's exploration node-->
     <!-- Abby's exploration node -->
-    <node name="explorer"           pkg="simple_maze_exploring" type="explorer"           required="true" output="screen">
+    <node name="explorer_elliot"           pkg="simple_maze_exploring" type="explorer_elliot" required="true" output="screen">
       <param name="robot_name" value="$(arg tb3_0)"/>
     </node>
 

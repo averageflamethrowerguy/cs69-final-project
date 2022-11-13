@@ -12,6 +12,8 @@ from sensor_msgs.msg import LaserScan, Image # message type for scan
 from nav_msgs.msg import Odometry, Path
 from std_msgs.msg import Float32
 from tf.transformations import quaternion_from_euler
+from std_msgs.msg import String
+import json
 import tf
 import numpy as np
 
@@ -29,17 +31,16 @@ LASER_ANGLE_FRONT = 0 # radians
 MIN_THRESHOLD_DISTANCE = 0.5 # m, threshold distance.
 DEFAULT_CMD_VEL_TOPIC = 'cmd_vel'
 DEFAULT_SCAN_TOPIC = 'scan'
+ROBOT_MERGE_TOPIC = "/merge"
 
 colors = {0: [255, 0, 0, 255], 1: [0, 255, 0, 255]}
 
 class Broadcast():
-    def __init__(self, num_robots):
+    def __init__(self, num_robots, robot_id):
         self._num_robots = num_robots
+        self._robot_id = robot_id
         self._image_sub = rospy.Subscriber(rospy.get_namespace() + "image", Image, self._image_cb)
-
-        '''
-        TODO: set up map service publishers to each robot for map merge sharing
-        '''
+        self._merge_signaller = rospy.Publisher(ROBOT_MERGE_TOPIC, String, queue_size=1)
 
         rospy.spin()
 
@@ -47,7 +48,7 @@ class Broadcast():
         lower = np.clip(colors[robot_id] + np.array([-20, -20, -20, 0]), np.ones(4) * 0,  np.ones(4) * 255).astype(np.uint8)
         upper = np.clip(colors[robot_id] + np.array([20, 20, 20, 0]), np.ones(4) * 0, np.ones(4) * 255).astype(np.uint8)
         
-        print(image, tuple(upper), tuple(lower))
+        # print(image, tuple(upper), tuple(lower))
         mask = cv2.inRange(image, lower, upper)
     
         image = cv2.bitwise_and(image, image, mask=mask)
@@ -78,9 +79,11 @@ class Broadcast():
         for i in range(self._num_robots):
             found = self._find_robot(cv_image, i)
             print("FOUND ROBOT [",i,"]:", found)
-            '''
-            TODO: add publisher for maps here
-            '''
+            msg_obj = {"robot_ids": [i, self._robot_id]}
+            json_msg = json.dumps(msg_obj)
+            string_msg = String()
+            string_msg.data = json_msg
+            self._merge_signaller.publish(string_msg)
         
 
     def run(self):
@@ -96,8 +99,10 @@ def main():
     rospy.sleep(2)
 
     num_robots = int(rospy.get_param("/num_robots"))
+    # robot_id_outer = rospy.get_param("robot_id")
+    robot_id_outer = 0
 
-    broadcast_node = Broadcast(num_robots)    
+    broadcast_node = Broadcast(num_robots, robot_id_outer)
     try:
         broadcast_node.run()
     except rospy.ROSInterruptException:

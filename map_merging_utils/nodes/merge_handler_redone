@@ -94,12 +94,7 @@ class MergeHandler:
         """
         new_map = map_1
 
-        temp_grid = numpy.zeros(map_1.info.height * map_1.info.width)
-
-        # copies all of map_1 into the temp grid
-        for i in range(map_1.info.height * map_1.info.width):
-            temp_grid[i] = map_1.data[i]
-
+        temp_grid = numpy.reshape(map_1.data, map_1.info.height * map_1.info.width)
         print("finished copy step")
 
         # Easy case: same origin, resolution, height, width
