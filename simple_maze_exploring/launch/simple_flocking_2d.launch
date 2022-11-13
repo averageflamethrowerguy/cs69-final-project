@@ -27,6 +27,8 @@
       <param name="odom_frame" value="/robot_0/odom"/>
       <param name="base_frame" value="/robot_0/base_footprint"/>
       <param name="map_frame" value="map"/>
+      <param name="maxUrange" value="25" />
+      <param name="maxRange" value="35" />
     </node>
 
     <!-- NOTE: Only load one exploration node per robot-->
@@ -45,6 +47,8 @@
       <param name="odom_frame" value="/$(arg tb3_1)/odom"/>
       <param name="base_frame" value="/$(arg tb3_1)/base_footprint"/>
       <param name="map_frame" value="map"/>
+      <param name="maxUrange" value="25" />
+      <param name="maxRange" value="35" />
     </node>
   </group>
 
