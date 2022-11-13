@@ -65,7 +65,7 @@ DEFAULT_CMD_VEL_TOPIC = 'cmd_vel'
 DEFAULT_SCAN_TOPIC = 'base_scan'
 DEFAULT_ODOM_TOPIC = 'odom' 
 DEFAULT_POS_TOPIC = 'pos'
-WALL_AVOID_RANGE = 0.3
+WALL_AVOID_RANGE = 1.5
 #NUM_ROBOTS = 6 # (num_robots is actually one more than this)
 
 class Explorer_Elliot():
@@ -99,6 +99,7 @@ class Explorer_Elliot():
         self._cmd_pub.publish(twist_msg)
 
     def _odom_callback(self, msg):
+        # print("ODOM DATA: " + str(msg))
         #Processing the odom location message
         xpos=msg.pose.pose.position.x #get all necessary information from the robot
         ypos=msg.pose.pose.position.y
@@ -114,16 +115,15 @@ class Explorer_Elliot():
         print("------------------------GOT MAP MESSAGE------------------------")
         temp_grid = np.copy(msg.data)
 
-        wall_avoid_cells = int(WALL_AVOID_RANGE / msg.info.resolution)
 
-        for row_id in range(msg.info.width):
-            for col_id in range(msg.info.height):
-                # spread 2s out from every 1
-                if temp_grid[row_id*msg.info.height + col_id] == 1:
-                    for i in range(wall_avoid_cells*2 + 1):
-                        row_offset = i - (wall_avoid_cells + 1)
-                        for j in range(wall_avoid_cells*2 + 1):
-                            col_offset = j - (wall_avoid_cells + 1)
+        # for row_id in range(msg.info.width):
+        #     for col_id in range(msg.info.height):
+        #         # spread 2s out from every 1
+        #         if temp_grid[row_id*msg.info.height + col_id] == 1:
+        #             for i in range(wall_avoid_cells*2 + 1):
+        #                 row_offset = i - (wall_avoid_cells + 1)
+        #                 for j in range(wall_avoid_cells*2 + 1):
+        #                     col_offset = j - (wall_avoid_cells + 1)
 
 
         self.my_map = temp_grid
@@ -156,16 +156,44 @@ class Explorer_Elliot():
         traceback = bfs.perform_search(0.1)
         print("TRACEBACK: " + str(traceback))
 
+        wall_avoid_cells = int(WALL_AVOID_RANGE / self.map_metadata.resolution)
+        print("AVOID CELLS: " + str(wall_avoid_cells))
+
+        new_traceback = [traceback[0]]
+
+        # Edit traceback front to back to include no driving points within a certain distance of a wall.
+        found_wall = False
+        for i in range(len(traceback)-1):
+            curr = traceback[i+1]
+            col = curr["x"]
+            row = curr["y"]
+            # if we're anywhere near a wall, this is not a valid waypoint
+            for row_offset in range(-wall_avoid_cells, wall_avoid_cells+1, 1):
+                for col_offset in range(-wall_avoid_cells, wall_avoid_cells+1, 1):
+                    if 0 <= row_offset+row < self.map_metadata.height and 0 <= col_offset+col < self.map_metadata.width:
+                        if grid_for_search[row_offset+row][col_offset+col] == 1:
+                            found_wall = True
+                            break
+
+                if found_wall:
+                    break
+
+            if not found_wall:
+                new_traceback.append(curr)
+            else:
+                break
+
+
         # Restores the x-y resolution, rather than the grid resolution
-        for i in range(len(traceback)):
-            traceback[i] = [
-                (traceback[i]["x"] * self.map_metadata.resolution) + self.map_metadata.origin.position.x,
-                (traceback[i]["y"] * self.map_metadata.resolution) + self.map_metadata.origin.position.y,
+        for i in range(len(new_traceback)):
+            new_traceback[i] = [
+                (new_traceback[i]["x"] * self.map_metadata.resolution) + self.map_metadata.origin.position.x,
+                (new_traceback[i]["y"] * self.map_metadata.resolution) + self.map_metadata.origin.position.y,
             ]
 
-        print("TRACEBACK AFTER REFORMAT: " + str(traceback))
+        print("TRACEBACK AFTER REFORMAT: " + str(new_traceback))
 
-        self.driver.draw_arbitrary_polygon(traceback)
+        self.driver.draw_arbitrary_polygon(new_traceback)
 
 
 def main():
