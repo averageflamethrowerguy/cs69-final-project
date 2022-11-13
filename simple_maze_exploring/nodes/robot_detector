@@ -78,7 +78,7 @@ class Broadcast():
         
         for i in range(self._num_robots):
             found = self._find_robot(cv_image, i)
-            print("FOUND ROBOT [",i,"]:", found)
+            # print("FOUND ROBOT [",i,"]:", found)
             msg_obj = {"robot_ids": [i, self._robot_id]}
             json_msg = json.dumps(msg_obj)
             string_msg = String()

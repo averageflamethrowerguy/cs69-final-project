@@ -21,8 +21,9 @@ DURATION = 5 #s how long the message should be published.
 
 class DriveLine:
     """Class example for a ROS node."""
-    def __init__(self):
+    def __init__(self, robot_name):
         """Initialization function."""
+        self.robot_name = robot_name
 
         # 2nd. setting up publishers/subscribers.
         # Setting up the publisher to send velocity commands.
@@ -187,7 +188,7 @@ class DriveLine:
         # Finds the transformation matrices in each direction
         # since the robot is at the origin of the polyline, we can use the
         # transforms between odom and base_link
-        (trans, rot) = self.listener.lookupTransform('odom', 'base_link', rospy.Time(0))
+        (trans, rot) = self.listener.lookupTransform(self.robot_name + '/odom', self.robot_name + '/base_link', rospy.Time(0))
         t = tf.transformations.translation_matrix(trans)
         R = tf.transformations.quaternion_matrix(rot)
 

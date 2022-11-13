@@ -67,7 +67,7 @@ DEFAULT_ODOM_TOPIC = 'odom'
 DEFAULT_POS_TOPIC = 'pos'
 #NUM_ROBOTS = 6 # (num_robots is actually one more than this)
 
-class Explorer():
+class Explorer_Elliot():
     def __init__(self, linear_velocity=LINEAR_VELOCITY, angular_velocity=ANGULAR_VELOCITY):
         """Constructor."""\
         # Get robot name and node namespace
@@ -77,7 +77,7 @@ class Explorer():
         self._cmd_pub = rospy.Publisher(DEFAULT_CMD_VEL_TOPIC, Twist, queue_size=1)
         
         # Setting up subscriber.
-        self._odom_sub = rospy.Subscriber(curr + DEFAULT_ODOM_TOPIC , Odometry, self._odom_callback, queue_size=1)
+        self._odom_sub = rospy.Subscriber(curr + DEFAULT_ODOM_TOPIC, Odometry, self._odom_callback, queue_size=1)
 
         # Setting up map subsciber (gets map generated from gmapping)
         self._map_sub = rospy.Subscriber("/%s/map" % self.robot_name, OccupancyGrid, self._map_callback, queue_size=1)
@@ -86,39 +86,23 @@ class Explorer():
         self.linear_velocity = linear_velocity # Constant linear velocity set.
         self.angular_velocity = angular_velocity # Constant angular velocity set.
 
-        self.location = [-31, -31, -31]
-        self.driver = DriveLine()
+        self.location = None
         self.map_metadata = None
         self.my_map = None
+        self.driver = DriveLine(self.robot_name)
+
 
     def stop(self): 
         """Stop the robot."""
         twist_msg = Twist()
         self._cmd_pub.publish(twist_msg)
 
-    location = np.array([-31,-31,-31])
     def _odom_callback(self, msg):
-        #Processing the odom location message 
-        self.xpos=msg.pose.pose.position.x #get all necessary information from the robot
-        self.ypos=msg.pose.pose.position.y
-        self.orient=msg.pose.pose.orientation
-        to_add = [self.xpos, self.ypos, self.orient]   #add it to an array 
-        self.location = to_add
-
-    '''
-    def map_merge(self,bot_map):
-        print()
-        #merge "map" with robot's personal local map where "map" is from the other robot seen in get_surround
-
-    def get_surround(self):
-        twist_msg = Twist()
-        twist_msg.angular.z = math.pi
-        self._cmd_pub(twist_msg)
-        my_map = #from laserscan
-        #if another robot is seen in laser scan
-            #self.map_merge(bot_map)
-        return my_map
-    '''
+        #Processing the odom location message
+        xpos=msg.pose.pose.position.x #get all necessary information from the robot
+        ypos=msg.pose.pose.position.y
+        orient=msg.pose.pose.orientation
+        self.location = [xpos, ypos, orient]
 
     def _map_callback(self, msg):
         """
@@ -132,7 +116,8 @@ class Explorer():
             temp_grid[i] = msg.data[i]
         self.my_map = temp_grid
         self.map_metadata = msg.info
-    
+        print("------------------------SET MAP------------------------")
+
     def explore(self):
         '''
         Robot does the following:
@@ -141,8 +126,8 @@ class Explorer():
         3. TODO -- tell the action server to drive to that position
         '''
         
-        print("here")
-        while self.location[0] == -31 or self.my_map is None:
+        while self.location is None or self.my_map is None:
+            print("is none")
             return
         curr = rospy.get_namespace()
 
@@ -161,14 +146,14 @@ class Explorer():
 
         # Restores the x-y resolution, rather than the grid resolution
         for i in range(len(traceback)):
-            traceback[i] = {
-                "x": (traceback[i]["x"] * self.map_metadata.resolution) + self.map_metadata.origin.position.x,
-                "y": (traceback[i]["y"] * self.map_metadata.resolution) + self.map_metadata.origin.position.y,
-            }
+            traceback[i] = [
+                (traceback[i]["x"] * self.map_metadata.resolution) + self.map_metadata.origin.position.x,
+                (traceback[i]["y"] * self.map_metadata.resolution) + self.map_metadata.origin.position.y,
+            ]
 
         print("TRACEBACK AFTER REFORMAT: " + str(traceback))
 
-        driver.draw_arbitrary_polygon()
+        self.driver.draw_arbitrary_polygon(traceback)
 
 
 def main():
@@ -181,7 +166,7 @@ def main():
     rospy.sleep(2)
     
     # Initialization of the class for the communicator.
-    explorer = Explorer()
+    explorer = Explorer_Elliot()
     
     # If interrupted, send a stop command.
     rospy.on_shutdown(explorer.stop)
