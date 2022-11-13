@@ -127,6 +127,20 @@ class Explorer():
         return my_map
     '''
 
+    #Returns a boolean: true if the path is clear, false otherwise
+    def is_path_clear(self): 
+        if self.close_obstacle:
+            self._motion.rotate_in_place(3 * math.pi / 2)
+            time.sleep(3)
+            if self.close_obstacle:
+                self._motion.rotate_in_place(math.pi)
+                time.sleep(3)
+            self._motion.move_forward(0.3)
+            return False
+        else:
+            return True
+
+
     def path_in_dir(self,x,y, mp, rpos):
         
         i = 1
