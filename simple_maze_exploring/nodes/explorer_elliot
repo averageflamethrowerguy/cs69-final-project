@@ -171,7 +171,7 @@ class Explorer_Elliot():
         print("AVOID CELLS: " + str(wall_avoid_cells))
 
         if len(traceback) > 1:
-            new_traceback = [[traceback[0]["x"], traceback[0]["y"]]]
+            new_traceback = []
 
             # Restores the x-y resolution, rather than the grid resolution
             for i in range(len(traceback)):
