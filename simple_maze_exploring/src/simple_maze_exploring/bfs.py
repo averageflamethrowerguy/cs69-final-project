@@ -212,7 +212,7 @@ class BFS:
                 self.goal_node = next_node
                 did_find_goal = True
 
-            print(str(len(self.queue)))
+            # print(str(len(self.queue)))
 
             if len(self.queue) is 0:
                 has_completed = True

@@ -38,7 +38,7 @@
       <param name="robot_name" value="$(arg tb3_0)"/>
     </node>
 
-    <node name="robot_detector"     pkg="simple_maze_exploring" type="robot_detector"     required="true" output="screen"/>
+<!--     <node name="robot_detector"     pkg="simple_maze_exploring" type="robot_detector"     required="true" output="screen"/> -->
   </group>
 
   <group ns = "$(arg tb3_1)">
