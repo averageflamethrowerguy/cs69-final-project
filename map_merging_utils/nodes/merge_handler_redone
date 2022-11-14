@@ -38,6 +38,8 @@ class MergeHandler:
 
         rospy.Subscriber(MERGE_SIGNAL_TOPIC, String, self.merge_signal_callback)
 
+        self.is_merging = False
+
         # create subscribers and publishers for the
         for i in range(robot_count):
             robot_name = "/robot_" + str(i)
@@ -77,6 +79,9 @@ class MergeHandler:
 
             map_0 = self.merge_two_maps(map_0_unmerged, map_1_unmerged)
 
+            if map_0 is None:
+                return
+
             if (map_0_unmerged.info.origin.position.x == map_1_unmerged.info.origin.position.x and
                     map_0_unmerged.info.origin.position.y == map_1_unmerged.info.origin.position.y and
                     map_0_unmerged.info.width == map_1_unmerged.info.width and
@@ -102,6 +107,11 @@ class MergeHandler:
         Merges two maps, such that the output map has the same metadata as map_1, but all the explored spaces of
         both map_1 and map_2
         """
+        if self.is_merging:
+            return
+
+        self.is_merging = True
+
         new_map = map_1
 
         start = time.time()
@@ -147,6 +157,7 @@ class MergeHandler:
         end = time.time()
         print("MAP_MERGE: ============== finished iteration step in " + str(end - start))
 
+        self.is_merging = False
         new_map.data = temp_grid
         return new_map
 

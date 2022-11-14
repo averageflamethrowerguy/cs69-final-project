@@ -15,6 +15,7 @@ from tf.transformations import quaternion_from_euler
 from std_msgs.msg import String
 import json
 import tf
+import time
 import numpy as np
 
 
@@ -32,6 +33,7 @@ MIN_THRESHOLD_DISTANCE = 0.5 # m, threshold distance.
 DEFAULT_CMD_VEL_TOPIC = 'cmd_vel'
 DEFAULT_SCAN_TOPIC = 'scan'
 ROBOT_MERGE_TOPIC = "/merge"
+COUNTDOWN_AMOUNT = 10
 
 colors = {0: [255, 0, 0, 255], 1: [0, 255, 0, 255]}
 
@@ -42,6 +44,7 @@ class Broadcast:
         self._robot_id = robot_id
         self._image_sub = rospy.Subscriber(rospy.get_namespace() + "image", Image, self._image_cb)
         self._merge_signaller = rospy.Publisher(ROBOT_MERGE_TOPIC, String, queue_size=1)
+        self.publish_countdown = 0
 
         rospy.spin()
 
@@ -68,6 +71,7 @@ class Broadcast:
 
     def _image_cb(self, msg):
         #print(msg)
+        start = time.time()
         bridge = CvBridge()
         try:
             cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
@@ -76,18 +80,40 @@ class Broadcast:
         (rows,cols,channels) = cv_image.shape
         if cols > 60 and rows > 60:
             cv2.circle(cv_image, (50,50), 10, 255)
-        
+
+        found_bots = []
         for i in range(self._num_robots):
             found = self._find_robot(cv_image, i)
             if found:
-                # print("=========================================================")
-                # print("FOUND ROBOT [",i,"]:", found)
-                msg_obj = {"robot_ids": [i, self._robot_id]}
-                json_msg = json.dumps(msg_obj)
-                string_msg = String()
-                string_msg.data = json_msg
-                self._merge_signaller.publish(string_msg)
-        
+                print("=========================================================")
+                print("FOUND ROBOT [",i,"]:", found)
+                if i not in found_bots:
+                    print("=========================================================")
+                    print("ADDING ROBOT " + str(i))
+                    found_bots.append(i)
+
+        end = time.time()
+        self.publish(found_bots)
+
+    def publish(self, found_bots):
+        if len(found_bots) == 0:
+            return
+        # skips messages if we've recently had one that detected a bot (prevents spamming the server)
+        if self.publish_countdown > 0:
+            self.publish_countdown -= 1
+            return
+        self.publish_countdown = COUNTDOWN_AMOUNT
+
+        # sends messages for all detected bots
+        for bot in found_bots:
+            msg_obj = {"robot_ids": [bot, self._robot_id]}
+            json_msg = json.dumps(msg_obj)
+            string_msg = String()
+            string_msg.data = json_msg
+            print("===================WE FOUND A ROBOT -- WE WANT TO MERGE")
+            self._merge_signaller.publish(string_msg)
+
+        rospy.sleep(1)
 
     def run(self):
         pass
@@ -102,8 +128,8 @@ def main():
     rospy.sleep(2)
 
     num_robots = int(rospy.get_param("/num_robots"))
-    # robot_id_outer = rospy.get_param("robot_id")
-    robot_id_outer = 0
+    robot_id_outer = rospy.get_param("robot_id")
+    # robot_id_outer = 0
 
     broadcast_node = Broadcast(num_robots, robot_id_outer)
     try:
