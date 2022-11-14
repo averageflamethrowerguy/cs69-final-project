@@ -34,11 +34,13 @@
     <!-- NOTE: Only load one exploration node per robot-->
     <!-- Alphonso's exploration node-->
     <!-- Abby's exploration node -->
-    <node name="explorer_elliot"           pkg="simple_maze_exploring" type="explorer_elliot" required="true" output="screen">
+    <!-- <node name="explorer_elliot"           pkg="simple_maze_exploring" type="explorer_elliot" required="true" output="screen">
       <param name="robot_name" value="$(arg tb3_0)"/>
-    </node>
+    </node> -->
 
 <!--     <node name="robot_detector"     pkg="simple_maze_exploring" type="robot_detector"     required="true" output="screen"/> -->
+    <node name="exit_maze" pkg="simple_maze_exploring" type="exit_maze" required="true" output="screen">
+    </node>
   </group>
 
   <group ns = "$(arg tb3_1)">

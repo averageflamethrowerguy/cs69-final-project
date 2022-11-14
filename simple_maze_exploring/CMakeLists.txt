@@ -59,6 +59,7 @@ catkin_install_python(PROGRAMS
   nodes/explorer_elliot
   nodes/pid_controller
   nodes/test_rotation
+  nodes/exit_maze
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
