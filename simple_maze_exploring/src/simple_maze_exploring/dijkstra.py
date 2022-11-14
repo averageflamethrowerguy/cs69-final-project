@@ -34,8 +34,12 @@ class DijkstraSearch:
         # We check to see if the node has already been visited (i.e added to the tree)
         if node_id not in self.expanded_nodes or self.expanded_nodes[node_id]:
             self.expanded_nodes[node_id] = True
-
-            cost = parent.cost + self.edge_dictionary[parent.node_id][node_id]
+            #print("dict", self.edge_dictionary)
+            #print("cost update", parent.cost, " ",  self.edge_dictionary[parent.node_id][node_id], " ", node_id, " ", parent.node_id)
+            try:
+                cost = parent.cost + self.edge_dictionary[parent.node_id][node_id]
+            except:
+                cost = parent.cost
             # instantiate a new node
             child = SearchNode(node_id, cost, parent)
             self.priority_queue.append(child)

@@ -7,6 +7,8 @@
 #include "imedit/procedural.h"
 #include "imedit/filter.h"
 #include "imedit/im_color_maps.h"
+#include <string>
+#include <filesystem>
 
 void init_base_scene(imedit::Image &image)
 {
@@ -398,29 +400,33 @@ imedit::Image connect_nodes(imedit::Image &scene, imedit::Image &nodes)
 
 int main(int argc, char *argv[])
 {
-    imedit::Image base_scene = imedit::Image(17, 17);
-
+    std::filesystem::path cwd = std::filesystem::current_path();
+    printf("cwd: %s\n", cwd.string().c_str());
+    std::string path = "/home/wojciechs-lab/robotics_final/src/cs69-final-project/completed_maps/map.png";
+    printf("loading image %s\n", path.c_str());
+    imedit::Image base_scene = imedit::RGBImage(path);
+    printf("loaded image\n");
     init_base_scene(base_scene);
-
+    printf("init\n");
     imedit::Image corner_image = detect_corner(base_scene);
-
+    printf("corner\n");
     // corner_image.write("nodegen_corners.png");
 
     imedit::Image imp_pts = create_important_points(base_scene, corner_image);
-
+    printf("imp\n");
     // imp_pts.write("important_pts.png");
-
+    
     imedit::Image nodes = create_nodes(base_scene, imp_pts);
-
+    printf("node\n");
     // nodes.write("nodes.png");
 
     imedit::Image node_graph = connect_nodes(base_scene, nodes);
-
-    base_scene = imedit::mult_size(base_scene, 64);
-    corner_image = imedit::mult_size(corner_image, 64);
-    imp_pts = imedit::mult_size(imp_pts, 64);
-    nodes = imedit::mult_size(nodes, 64);
-    node_graph = imedit::mult_size(node_graph, 64);
+    printf("graph\n");
+    // base_scene = imedit::mult_size(base_scene, 64);
+    // corner_image = imedit::mult_size(corner_image, 64);
+    // imp_pts = imedit::mult_size(imp_pts, 64);
+    // nodes = imedit::mult_size(nodes, 64);
+    // node_graph = imedit::mult_size(node_graph, 64);
 
     base_scene.write("nodegen_base.png");
     corner_image.write("nodegen_corners.png");

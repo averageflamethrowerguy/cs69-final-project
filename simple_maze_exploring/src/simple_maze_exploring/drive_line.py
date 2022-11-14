@@ -12,11 +12,19 @@ import math
 import tf # library for transformations.
 import numpy
 
+from tf.transformations import euler_from_quaternion
 # Constants.
-FREQUENCY = 10 #Hz.
+FREQUENCY = 60 #Hz.
 VELOCITY = 0.3 #m/s
-ANGULAR_VELOCITY = 0.5 #radians / sec
+ANGULAR_VELOCITY = math.pi / 60 #radians / sec
 DURATION = 5 #s how long the message should be published.
+
+def euler_to_world(euler_angles):
+    import numpy as np
+    x = np.cos(euler_angles[2]) * np.cos(euler_angles[1])
+    y = np.sin(euler_angles[2]) * np.cos(euler_angles[1])
+    z = np.sin(euler_angles[1])
+    return np.array([x, y, z])
 
 
 class DriveLine:
@@ -214,4 +222,20 @@ class DriveLine:
         self.draw_arbitrary_polygon_in_local_frame(
             new_vertices, initial_orientation, baseLink_T_odom
         )
+    
+    def move_to_point(self, translation, heading):
+        import numpy as np
+        rate = rospy.Rate(FREQUENCY)
+        distance = np.linalg.norm(translation)
+        
+        tnorm = translation / np.linalg.norm(translation)
+        orient = euler_to_world(euler_from_quaternion(heading))
+        orient = orient / np.linalg.norm(orient)
+        #compute signed angle to determine rotation direction
+        angle = np.arctan2(tnorm[1]*orient[0] - tnorm[0]*orient[1], tnorm[0]*orient[0] + tnorm[1]*orient[1])
+
+        self.rotate(angle) #rotate to align the heading with thge point we want to reach
+        self.move(0.0, 0.0)
+        self.move_forward(distance) #move until point reached
+        self.move(0.0, 0.0)
 
