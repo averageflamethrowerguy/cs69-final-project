@@ -64,7 +64,8 @@ class MapForwarder:
             new_metadata = self.current_metadata
             new_grid = self.current_grid
 
-            temp_grid = numpy.copy(msg.data)
+            temp_grid_2 = numpy.copy(msg.data)
+            temp_grid = numpy.copy(new_grid)
 
             # Easy case: same origin, resolution, height, width
             if (new_metadata.origin.position.x == new_metadata.origin.position.x and
@@ -72,9 +73,10 @@ class MapForwarder:
                     new_metadata.width == new_metadata.width and
                     new_metadata.height == new_metadata.height
             ):
-                for i in range(new_metadata.height * new_metadata.width):
-                    if temp_grid[i] == -1:
-                        temp_grid[i] = msg.data[i]
+                condlist = [temp_grid != -1, temp_grid == -1]
+                choicelist = [temp_grid, temp_grid_2]
+                temp_grid = numpy.select(condlist, choicelist)
+                self.current_grid = temp_grid
 
     def updated_callback(self, msg):
         """This is the most up-to-date map, which overrides the other grid / metadata stuff we have loaded"""
