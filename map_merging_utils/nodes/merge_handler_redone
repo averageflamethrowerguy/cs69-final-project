@@ -10,6 +10,7 @@ import rospy  # module for ROS APIs
 from std_msgs.msg import String
 import json
 import numpy
+import time
 from nav_msgs.msg import OccupancyGrid  # Message type for map data
 
 MERGE_SIGNAL_TOPIC = "/merge"
@@ -93,7 +94,8 @@ class MergeHandler:
         both map_1 and map_2
         """
         new_map = map_1
-
+        
+        start = time.time()
         temp_grid = numpy.reshape(map_1.data, map_1.info.height * map_1.info.width)
         print("finished copy step")
 
@@ -127,7 +129,8 @@ class MergeHandler:
                         if temp_grid[new_row*map_1.info.width + new_col] == -1:
                             temp_grid[new_row*map_1.info.width + new_col] = map_2.data[row_id*map_2.info.width + col_id]
 
-        print("finished iteration step")
+        end = time.time()
+        print("MAP_MERGE: ============== finished iteration step in " + str(end - start))
 
         new_map.data = temp_grid
         return new_map

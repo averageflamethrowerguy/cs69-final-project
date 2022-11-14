@@ -64,10 +64,7 @@ class MapForwarder:
             new_metadata = self.current_metadata
             new_grid = self.current_grid
 
-            temp_grid = numpy.zeros(new_metadata.height * new_metadata.width)
-            # copies all of map_1 into the temp grid
-            for i in range(new_metadata.height * new_metadata.width):
-                temp_grid[i] = new_grid[i]
+            temp_grid = numpy.copy(msg.data)
 
             # Easy case: same origin, resolution, height, width
             if (new_metadata.origin.position.x == new_metadata.origin.position.x and
