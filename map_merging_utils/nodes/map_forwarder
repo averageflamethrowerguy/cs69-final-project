@@ -79,10 +79,10 @@ class MapForwarder:
     def updated_callback(self, msg):
         """This is the most up-to-date map, which overrides the other grid / metadata stuff we have loaded"""
         print("UPDATED_CALLBACK: Received updated data!")
-        # self.different_from_gmapping = True
-        #
-        # self.current_grid = msg.data
-        # self.current_metadata = msg.info
+        self.different_from_gmapping = True
+
+        self.current_grid = msg.data
+        self.current_metadata = msg.info
 
     def publish_grid(self):
         if self.current_grid is None:
