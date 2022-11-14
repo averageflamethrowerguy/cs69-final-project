@@ -1,0 +1,56 @@
+include "turtlebot.inc"
+
+define floorplan model
+(
+  # sombre, sensible, artistic
+  color "gray30"
+
+  # most maps will need a bounding box
+  boundary 1
+
+  gui_nose 0
+  gui_grid 0
+  gui_outline 0
+  gripper_return 0
+  fiducial_return 0
+  laser_return 1
+)
+
+
+resolution 0.02
+interval_sim 100  # simulation timestep in milliseconds
+
+#NOTE: ROBOT COLOR SCHEME
+#IN ORDER TO DETECT ROBOTS, there is a specific scheme implemented for now, as follows:
+#robot_0 -> red
+#robot_1 -> green
+#robot_2 -> blue
+
+turtlebot
+(
+  pose [ 2.5 1.0 0.0 0.0 ]
+  name "robot_0"
+  color "red"
+)
+
+turtlebot
+(
+  pose [ 10.0 6.0 0.0 0.0 ]
+  name "robot_1"
+  color "green"
+)
+
+turtlebot
+(
+  pose [ -3.0 6.0 0.0 0.0 ]
+  name "robot_2"
+  color "blue"
+)
+
+floorplan
+(
+  name "maze"
+  bitmap "./maze2_big.png"
+  size [ 30.0 30.0 2.0 ]
+  pose [  0.0  0.0 0.0 0.0 ]
+)

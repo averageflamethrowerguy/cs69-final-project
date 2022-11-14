@@ -64,8 +64,9 @@ class MapForwarder:
             new_metadata = self.current_metadata
             new_grid = self.current_grid
 
-            temp_grid_2 = numpy.copy(msg.data)
-            temp_grid = numpy.copy(new_grid)
+            # the new data takes priority, as this robot is generally more accurate than the given map
+            temp_grid = numpy.copy(msg.data)
+            temp_grid_2 = numpy.copy(new_grid)
 
             # Easy case: same origin, resolution, height, width
             if (new_metadata.origin.position.x == new_metadata.origin.position.x and

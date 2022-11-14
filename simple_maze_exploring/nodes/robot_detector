@@ -35,7 +35,7 @@ DEFAULT_SCAN_TOPIC = 'scan'
 ROBOT_MERGE_TOPIC = "/merge"
 COUNTDOWN_AMOUNT = 10
 
-colors = {0: [255, 0, 0, 255], 1: [0, 255, 0, 255]}
+colors = {0: [255, 0, 0, 255], 1: [0, 255, 0, 255], 2: [0, 0, 255, 255]}
 
 
 class Broadcast:
