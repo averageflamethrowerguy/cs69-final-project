@@ -41,6 +41,7 @@ class MergeHandler:
         # create subscribers and publishers for the
         for i in range(robot_count):
             robot_name = "/robot_" + str(i)
+            print("====================== SUBSCRIBING TO: " + robot_name + OCCUPANCY_GRID_IN_TOPIC)
             self.map_listeners.append(
                 rospy.Subscriber(robot_name + OCCUPANCY_GRID_IN_TOPIC,
                                  OccupancyGrid, self.construct_callback_wrapper(i))
@@ -58,7 +59,7 @@ class MergeHandler:
 
     def merge_signal_callback(self, msg):
         """Receives a merge signal -- tells the merge module to merge two of the maps"""
-        print("MERGE_CALLBACK: got a request to merge two data streams")
+        print("MERGE_CALLBACK: got a request to merge two data streams; " + str(msg.data))
         # decode the json
         data = json.loads(msg.data)
         ids = data["robot_ids"]
@@ -75,7 +76,15 @@ class MergeHandler:
             # NOTE -- we send 1 to 0 and 0 to 1, so both maps get merged
 
             map_0 = self.merge_two_maps(map_0_unmerged, map_1_unmerged)
-            map_1 = self.merge_two_maps(map_1_unmerged, map_0_unmerged)
+
+            if (map_0_unmerged.info.origin.position.x == map_1_unmerged.info.origin.position.x and
+                    map_0_unmerged.info.origin.position.y == map_1_unmerged.info.origin.position.y and
+                    map_0_unmerged.info.width == map_1_unmerged.info.width and
+                    map_0_unmerged.info.height == map_1_unmerged.info.height
+            ):
+                map_1 = map_0
+            else:
+                map_1 = self.merge_two_maps(map_1_unmerged, map_0_unmerged)
 
             # note the following line SENDS to robot 0
             print("Sending out the new maps!")
@@ -94,7 +103,7 @@ class MergeHandler:
         both map_1 and map_2
         """
         new_map = map_1
-        
+
         start = time.time()
         temp_grid = numpy.reshape(map_1.data, map_1.info.height * map_1.info.width)
         print("finished copy step")
@@ -108,7 +117,7 @@ class MergeHandler:
             print("Easy case!")
             for i in range(map_1.info.height * map_1.info.width):
                 if temp_grid[i] == -1:
-                    temp_grid[i] = map_1.data[i]
+                    temp_grid[i] = map_2.data[i]
 
         # Hard case:
         # NOTE -- this doesn't QUITE work -- 2 off

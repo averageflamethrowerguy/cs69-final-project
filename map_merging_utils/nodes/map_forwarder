@@ -76,28 +76,24 @@ class MapForwarder:
                     if temp_grid[i] == -1:
                         temp_grid[i] = msg.data[i]
 
-        # publish the current grid
-        grid = OccupancyGrid()
-        grid.header = self.current_header
-        grid.info = self.current_metadata
-        grid.data = self.current_grid
-        print("============= GMAPPING_CALLBACK: Publishing...!")
-        self.current_pub.publish(grid)
-
     def updated_callback(self, msg):
         """This is the most up-to-date map, which overrides the other grid / metadata stuff we have loaded"""
         print("UPDATED_CALLBACK: Received updated data!")
-        self.different_from_gmapping = True
+        # self.different_from_gmapping = True
+        #
+        # self.current_grid = msg.data
+        # self.current_metadata = msg.info
 
-        self.current_grid = msg.data
-        self.current_metadata = msg.info
+    def publish_grid(self):
+        if self.current_grid is None:
+            return
 
         # publish the current grid
         grid = OccupancyGrid()
         grid.header = self.current_header
         grid.info = self.current_metadata
         grid.data = self.current_grid
-        print("============= UPDATED_CALLBACK: Publishing...!")
+        # print("============= Publishing Grid...!")
         self.current_pub.publish(grid)
 
 
@@ -107,4 +103,7 @@ if __name__ == "__main__":
     print("MAP_FORWARDER: starting up")
     robot_name = rospy.get_param("robot_name")
     handler = MapForwarder(robot_name)
-    rospy.spin()
+
+    while not rospy.is_shutdown():
+        handler.publish_grid()
+        rospy.sleep(1)
