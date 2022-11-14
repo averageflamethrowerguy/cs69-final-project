@@ -56,6 +56,9 @@ include_directories(
 catkin_install_python(PROGRAMS
   nodes/explorer
   nodes/robot_detector
+  nodes/explorer_elliot
+  nodes/pid_controller
+  nodes/test_rotation
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

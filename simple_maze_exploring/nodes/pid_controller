@@ -1,0 +1,135 @@
+#!/usr/bin/env python
+
+# Author: Elliot Potter, CS 81, Dartmouth College
+# Date: 10/3/21
+
+# import of relevant libraries.
+import rospy  # module for ROS APIs
+from geometry_msgs.msg import Twist  # message type for velocity command.
+from sensor_msgs.msg import LaserScan
+
+import math
+import tf  # library for transformations.
+import numpy
+
+# Constants.
+FREQUENCY = 10.0  # Hz.
+VELOCITY = 0.2  # m/s
+
+# doesn't fit down bottlenecks at >= 0.75
+DISTANCE_FROM_WALL = 0.5
+
+# the PID terms for the distance
+K_p_d = 1 # 1
+K_d_d = 0
+K_i_d = 1 # 0.2
+
+# the PID terms for theta
+K_p_theta = 1
+
+
+class PidController:
+    """Class example for a ROS node."""
+
+    def __init__(self):
+        """Initialization function."""
+
+        # 2nd. setting up publishers/subscribers.
+        # Setting up the publisher to send velocity commands.
+        self._cmd_pub = rospy.Publisher("cmd_vel", Twist, queue_size=1)
+
+        # this is an empty field, so we don't need the laser_scan
+        self.subscriber = rospy.Subscriber("base_scan", LaserScan, self._laser_callback)
+
+        # We set the angular velocity to just be the robot wheels driving in opposition
+        self.velocity = VELOCITY
+
+        # Angle Theta is the difference between the direction the robot is facing and the line parallel
+        # to the nearest point of the wall. (We essentially construct a line between the robot and that point,
+        # and then set theta=0 to point along the line perpendicular to that one. My report has an illustration of this.
+        self.theta = 0
+
+        # the shortest distance to a wall
+        self.shortest_distance = 0
+
+        # save the last proportional term
+        self.last_proportional = 0
+
+        # Sleep important for allowing time for registration to the ROS master.
+        rospy.sleep(2)
+
+    def _laser_callback(self, msg):
+        """Processing of laser message."""
+        # Find the minimum range value and minimum range angle
+        min_scan_range = None
+        min_scan_angle = None
+
+        # this robot sees in the full 360 degrees; this is not true for all robots (but this algo works best
+        # if the robot can see in the full range.
+        for i in range(len(msg.ranges)):
+            if min_scan_range is None or min_scan_range > msg.ranges[i]:
+                min_scan_range = msg.ranges[i]
+                min_scan_angle = msg.angle_min + i * msg.angle_increment
+
+        theta = -(min_scan_angle + math.pi / 2)
+
+        # flips large signs
+        if (theta > math.pi):
+            theta = theta - (2 * math.pi)
+        if (theta < -1 * math.pi):
+            theta = theta + (2 * math.pi)
+
+        self.theta = theta
+
+        self.shortest_distance = min_scan_range
+
+
+    def move(self, linear_vel, angular_vel):
+        """Send a velocity command (linear vel in m/s, angular vel in rad/s)."""
+        # Setting velocities.
+        twist_msg = Twist()
+
+        twist_msg.linear.x = linear_vel
+        twist_msg.angular.z = angular_vel
+        self._cmd_pub.publish(twist_msg)
+
+    def follow_wall(self, target_distance):
+        """Follows the wall """
+        rate = rospy.Rate(FREQUENCY)  # loop at 10 Hz.
+
+        while not rospy.is_shutdown():
+            # calculate the difference between the target distance and the actual distance
+            proportional_value = target_distance - self.shortest_distance
+
+            integral_value = 0
+
+            derivative_value = (proportional_value - self.last_proportional) / (1 / FREQUENCY)
+
+            # sets the last_proportional again
+            self.last_proportional = proportional_value
+
+            # we calculate the next target distance
+            U_d = K_p_d * proportional_value + K_d_d * derivative_value + K_i_d * integral_value
+
+            # we modify this to work in terms of theta
+            desired_theta = math.asin(min(max(U_d / VELOCITY, -1), 1))
+
+            # this subsidiary controller is updated on the fly, and is entirely proportional
+            angular_velocity = K_p_theta * (desired_theta - self.theta)
+
+            # we move the robot for a tick
+            self.move(VELOCITY, angular_velocity)
+
+            # sleep for a tick
+            rate.sleep()
+
+
+if __name__ == "__main__":
+    # 1st. initialization of node.
+    rospy.init_node("pid_controller")
+
+    # 2nd. Creation of the class with relevant publishers/subscribers.
+    t = PidController()
+
+    # 3rd, loop.
+    t.follow_wall(0.5)
