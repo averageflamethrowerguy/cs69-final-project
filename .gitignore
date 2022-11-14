@@ -1,3 +1,4 @@
 imedit/build/
 *.DS_Store
 *.pyc
+.idea

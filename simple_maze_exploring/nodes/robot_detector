@@ -35,7 +35,8 @@ ROBOT_MERGE_TOPIC = "/merge"
 
 colors = {0: [255, 0, 0, 255], 1: [0, 255, 0, 255]}
 
-class Broadcast():
+
+class Broadcast:
     def __init__(self, num_robots, robot_id):
         self._num_robots = num_robots
         self._robot_id = robot_id
@@ -57,11 +58,11 @@ class Broadcast():
 
         output = cv2.drawContours(image, hierarchy, -1, (255, 255, 0, 255), 4)
         
-        # Showing the output
-        if np.any(image[image > 0]):
-            plt.imshow(output)
-            plt.show()
-            cv2.waitKey(30)
+        # # Showing the output
+        # if np.any(image[image > 0]):
+        #     plt.imshow(output)
+        #     plt.show()
+        #     cv2.waitKey(30)
 
         return np.any(image[image > 0])
 
@@ -78,12 +79,14 @@ class Broadcast():
         
         for i in range(self._num_robots):
             found = self._find_robot(cv_image, i)
-            # print("FOUND ROBOT [",i,"]:", found)
-            msg_obj = {"robot_ids": [i, self._robot_id]}
-            json_msg = json.dumps(msg_obj)
-            string_msg = String()
-            string_msg.data = json_msg
-            self._merge_signaller.publish(string_msg)
+            if found:
+                # print("=========================================================")
+                # print("FOUND ROBOT [",i,"]:", found)
+                msg_obj = {"robot_ids": [i, self._robot_id]}
+                json_msg = json.dumps(msg_obj)
+                string_msg = String()
+                string_msg.data = json_msg
+                self._merge_signaller.publish(string_msg)
         
 
     def run(self):

@@ -84,7 +84,7 @@ class MapForwarder:
         grid.header = self.current_header
         grid.info = self.current_metadata
         grid.data = self.current_grid
-        print("GMAPPING_CALLBACK: Publishing...!")
+        print("============= GMAPPING_CALLBACK: Publishing...!")
         self.current_pub.publish(grid)
 
     def updated_callback(self, msg):
@@ -100,7 +100,7 @@ class MapForwarder:
         grid.header = self.current_header
         grid.info = self.current_metadata
         grid.data = self.current_grid
-        print("UPDATED_CALLBACK: Publishing...!")
+        print("============= UPDATED_CALLBACK: Publishing...!")
         self.current_pub.publish(grid)
 
 
