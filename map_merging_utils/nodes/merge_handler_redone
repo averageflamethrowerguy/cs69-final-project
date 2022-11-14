@@ -106,6 +106,7 @@ class MergeHandler:
 
         start = time.time()
         temp_grid = numpy.reshape(map_1.data, map_1.info.height * map_1.info.width)
+        temp_grid_2 = numpy.reshape(map_2.data, map_2.info.height * map_2.info.width)
         print("finished copy step")
 
         # Easy case: same origin, resolution, height, width
@@ -115,9 +116,14 @@ class MergeHandler:
                 map_1.info.height == map_2.info.height
         ):
             print("Easy case!")
-            for i in range(map_1.info.height * map_1.info.width):
-                if temp_grid[i] == -1:
-                    temp_grid[i] = map_2.data[i]
+
+            condlist = [temp_grid != -1, temp_grid == -1]
+            choicelist = [temp_grid, temp_grid_2]
+            temp_grid = numpy.select(condlist, choicelist)
+
+            # for i in range(map_1.info.height * map_1.info.width):
+            #     if temp_grid[i] == -1:
+            #         temp_grid[i] = map_2.data[i]
 
         # Hard case:
         # NOTE -- this doesn't QUITE work -- 2 off
