@@ -14,7 +14,7 @@ import numpy
 
 # Constants.
 FREQUENCY = 10 #Hz.
-VELOCITY = 0.5 #m/s
+VELOCITY = 0.3 #m/s
 ANGULAR_VELOCITY = 0.5 #radians / sec
 DURATION = 5 #s how long the message should be published.
 

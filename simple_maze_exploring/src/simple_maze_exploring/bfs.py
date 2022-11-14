@@ -85,6 +85,24 @@ class BFS:
 
         return backtrack_chain
 
+    def is_wall_in_5(self, y, x):
+        """
+        Checks to see if there is a wall within 5 cells in any direction
+        :param y:
+        :param x:
+        :return:
+        """
+        distance = 2
+        for i in range(-distance, distance + 1, 1):
+            new_y = y + i
+            for j in range(-distance, distance + 1, 1):
+                new_x = x + j
+                # if within grid
+                if 0 <= new_y < len(self.grid) and 0 <= new_x < len(self.grid[0]):
+                    if self.grid[new_y][new_x] > self.occupancy_threshold:
+                        return True
+        return False
+
     def is_path_clear(self, point1, point2):
         """
         Checks to see if the path between the two points is clear, by evaluating all points on
@@ -133,6 +151,7 @@ class BFS:
                     y_eval = point2["y"] + i
                     x_eval = point2["x"] + offset
 
+                # if self.is_wall_in_5(int(y_eval),int(x_eval)):
                 if self.grid[int(y_eval)][int(x_eval)] > self.occupancy_threshold:
                     return False
         else:
@@ -146,6 +165,7 @@ class BFS:
                     x_eval = point2["x"] + i
 
                 # if we encounter a wall, we'll just return
+                # if self.is_wall_in_5(int(y_eval),int(x_eval)):
                 if self.grid[int(y_eval)][x_eval] > self.occupancy_threshold:
                     return False
 
@@ -164,7 +184,7 @@ class BFS:
         # add the end point
         new_path = [raw_path[-1]]
 
-        print ("Minimizing the path")
+        print("Minimizing the path")
 
         i_max = len(raw_path)
         if i_max is 1:
@@ -217,7 +237,7 @@ class BFS:
             if len(self.queue) is 0:
                 has_completed = True
                 has_failed = True
-                print ("Failed: returning an empty list...")
+                print("Failed: returning an empty list...")
 
             elif not did_find_goal:
                 self.expand_node(next_node)
@@ -231,6 +251,12 @@ class BFS:
         raw_path = self.perform_backtrack()
 
         print("Search complete")
+
+        # other_dir = []
+        # for thing in raw_path:
+        #     other_dir.append(thing)
+        #
+        # return other_dir
 
         # cleans up the path by checking nearby nodes to see if there is a clear path between them
         return self.minimize_path(raw_path)

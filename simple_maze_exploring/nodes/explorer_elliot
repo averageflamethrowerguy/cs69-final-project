@@ -65,7 +65,7 @@ DEFAULT_CMD_VEL_TOPIC = 'cmd_vel'
 DEFAULT_SCAN_TOPIC = 'base_scan'
 DEFAULT_ODOM_TOPIC = 'odom' 
 DEFAULT_POS_TOPIC = 'pos'
-WALL_AVOID_RANGE = 0.3
+WALL_AVOID_RANGE = 0.5
 #NUM_ROBOTS = 6 # (num_robots is actually one more than this)
 
 class Explorer_Elliot():
@@ -164,7 +164,7 @@ class Explorer_Elliot():
         print("INITIAL POS: " + str(initial_pos))
 
         bfs = BFS(initial_pos, grid_for_search)
-        traceback = bfs.perform_search(0.1)
+        traceback = bfs.perform_search(0.4)
         print("TRACEBACK: " + str(traceback))
 
         wall_avoid_cells = int(WALL_AVOID_RANGE / self.map_metadata.resolution)
