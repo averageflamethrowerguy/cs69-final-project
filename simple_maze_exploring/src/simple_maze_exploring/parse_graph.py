@@ -1,6 +1,6 @@
 import json
 import math
-
+import networkx as nx
 
 def parse_json_graph(json_graph):
     """
@@ -44,3 +44,11 @@ def parse_json_graph(json_graph):
 
     # returns both the node dictionary and the edge dictionary
     return node_dictionary, edge_dictionary
+
+def create_nx_graph(edge_dictionary):
+    g = nx.Graph()
+    for node, connections in edge_dictionary.items():
+        for k,v in connections.items():
+            g.add_edge(node, k, weight=v)
+    return g
+

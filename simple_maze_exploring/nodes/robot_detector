@@ -49,17 +49,18 @@ class Broadcast:
         rospy.spin()
 
     def _find_robot(self, image, robot_id):
+        #compute color bounds to ID the robot
         lower = np.clip(colors[robot_id] + np.array([-20, -20, -20, 0]), np.ones(4) * 0,  np.ones(4) * 255).astype(np.uint8)
         upper = np.clip(colors[robot_id] + np.array([20, 20, 20, 0]), np.ones(4) * 0, np.ones(4) * 255).astype(np.uint8)
         
-        # print(image, tuple(upper), tuple(lower))
+        #use a bitmask to convert colors we aren't looking for to black
         mask = cv2.inRange(image, lower, upper)
     
         image = cv2.bitwise_and(image, image, mask=mask)
 
         contours, hierarchy, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        output = cv2.drawContours(image, hierarchy, -1, (255, 255, 0, 255), 4)
+        output = cv2.drawContours(image, hierarchy, -1, colors[robot_id], 4)
         
         # # Showing the output
         # if np.any(image[image > 0]):
@@ -67,10 +68,11 @@ class Broadcast:
         #     plt.show()
         #     cv2.waitKey(30)
 
+
+        #return true if any pixel isn't black in the masked image. This allows us to identify robots partially occluded by a wall or another robot
         return np.any(image[image > 0])
 
     def _image_cb(self, msg):
-        #print(msg)
         start = time.time()
         bridge = CvBridge()
         try:
