@@ -66,6 +66,7 @@ imedit::Image detect_corner(imedit::Image &scene)
     imedit::Image image = scene;
     for (int i = 0; i < image.height(); ++i)
     {
+        std::cout << i << std::endl;
         for (int j = 0; j < image.width(); ++j)
         {
             image(j, i) = imedit::Pixel(0.0);
@@ -73,11 +74,12 @@ imedit::Image detect_corner(imedit::Image &scene)
             imedit::Pixel center = scene.filter_index(j, i);
             if (center.r > 0.0)
             {
-
+                std::cout << "PRE" << std::endl;
                 imedit::Pixel one = scene.filter_index(j + 1, i);
                 imedit::Pixel two = scene.filter_index(j - 1, i);
                 imedit::Pixel three = scene.filter_index(j, i + 1);
                 imedit::Pixel four = scene.filter_index(j, i - 1);
+                std::cout << "POST" << std::endl;
 
                 int num_empty_x = 0;
                 int num_empty_y = 0;
@@ -398,29 +400,55 @@ imedit::Image connect_nodes(imedit::Image &scene, imedit::Image &nodes)
     return image;
 }
 
+imedit::Image invert_image(imedit::Image &scene)
+{
+    imedit::Image image = scene;
+
+    for (int i = 0; i < scene.height(); ++i)
+    {
+        for (int j = 0; j < scene.width(); ++j)
+        {
+            if (scene(j, i).r > 0.5)
+            {
+                image(j, i) = imedit::Pixel(0.0);
+            }
+            else
+            {
+                image(j, i) = imedit::Pixel(1.0);
+            }
+        }
+    }
+
+    return image;
+}
+
 int main(int argc, char *argv[])
 {
-    std::filesystem::path cwd = std::filesystem::current_path();
-    printf("cwd: %s\n", cwd.string().c_str());
-    std::string path = "/home/wojciechs-lab/robotics_final/src/cs69-final-project/completed_maps/map.png";
+    // std::filesystem::path cwd = std::filesystem::current_path();
+    // printf("cwd: %s\n", cwd.string().c_str());
+    // std::string path = "/home/wojciechs-lab/robotics_final/src/cs69-final-project/completed_maps/map.png";
+    std::string path = "base_map_clean.png";
     printf("loading image %s\n", path.c_str());
-    imedit::Image base_scene = imedit::RGBImage(path);
+    imedit::Image base_scene = imedit::Image(path);
     printf("loaded image\n");
-    init_base_scene(base_scene);
-    printf("init\n");
-    imedit::Image corner_image = detect_corner(base_scene);
+    imedit::Image inverted = invert_image(base_scene);
+    // init_base_scene(base_scene);
+    base_scene.write("nodegen_base.png");
+    inverted.write("inverted_base.png");
+    // printf("init\n");
+    imedit::Image corner_image = detect_corner(inverted);
     printf("corner\n");
-    // corner_image.write("nodegen_corners.png");
+    corner_image.write("nodegen_corners.png");
 
-    imedit::Image imp_pts = create_important_points(base_scene, corner_image);
+    imedit::Image imp_pts = create_important_points(inverted, corner_image);
     printf("imp\n");
-    // imp_pts.write("important_pts.png");
-    
-    imedit::Image nodes = create_nodes(base_scene, imp_pts);
+    imp_pts.write("important_pts.png");
+
+    imedit::Image nodes = create_nodes(inverted, imp_pts);
     printf("node\n");
     // nodes.write("nodes.png");
 
-    imedit::Image node_graph = connect_nodes(base_scene, nodes);
+    imedit::Image node_graph = connect_nodes(inverted, nodes);
     printf("graph\n");
     // base_scene = imedit::mult_size(base_scene, 64);
     // corner_image = imedit::mult_size(corner_image, 64);
@@ -428,7 +456,7 @@ int main(int argc, char *argv[])
     // nodes = imedit::mult_size(nodes, 64);
     // node_graph = imedit::mult_size(node_graph, 64);
 
-    base_scene.write("nodegen_base.png");
+    // base_scene.write("nodegen_base.png");
     corner_image.write("nodegen_corners.png");
     imp_pts.write("important_pts.png");
     nodes.write("nodes.png");
