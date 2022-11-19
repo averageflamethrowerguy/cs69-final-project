@@ -66,7 +66,6 @@ imedit::Image detect_corner(imedit::Image &scene)
     imedit::Image image = scene;
     for (int i = 0; i < image.height(); ++i)
     {
-        std::cout << i << std::endl;
         for (int j = 0; j < image.width(); ++j)
         {
             image(j, i) = imedit::Pixel(0.0);
@@ -74,12 +73,10 @@ imedit::Image detect_corner(imedit::Image &scene)
             imedit::Pixel center = scene.filter_index(j, i);
             if (center.r > 0.0)
             {
-                std::cout << "PRE" << std::endl;
                 imedit::Pixel one = scene.filter_index(j + 1, i);
                 imedit::Pixel two = scene.filter_index(j - 1, i);
                 imedit::Pixel three = scene.filter_index(j, i + 1);
                 imedit::Pixel four = scene.filter_index(j, i - 1);
-                std::cout << "POST" << std::endl;
 
                 int num_empty_x = 0;
                 int num_empty_y = 0;
@@ -137,7 +134,6 @@ imedit::Image create_important_points(imedit::Image &scene, imedit::Image &corne
     }
 
     for (int i = 0; i < corners.height(); ++i)
-    // for (int i = 0; i < 3; ++i)
     {
         for (int j = 0; j < corners.width(); ++j)
         {
@@ -155,48 +151,33 @@ imedit::Image create_important_points(imedit::Image &scene, imedit::Image &corne
                 int ri = i + 1;
                 while (scene(j, ri).r == 0.0)
                     ri++;
-                // std::cout << "pre ri: " << ri << std::endl;
                 // find down collision
                 int li = i - 1;
                 while (scene(j, li).r == 0.0)
                     li--;
-
-                // std::cout << "collision rj: " << rj << std::endl;
-                // std::cout << "collision lj: " << lj << std::endl;
-                // std::cout << "collision ri: " << ri << std::endl;
-                // std::cout << "collision li: " << li << std::endl;
 
                 int pj_dist = std::abs(rj - j) - 1;
                 int mj_dist = std::abs(lj - j) - 1;
                 int pi_dist = std::abs(ri - i) - 1;
                 int mi_dist = std::abs(li - i) - 1;
 
-                // std::cout << "collision rj_dist: " << pj_dist << std::endl;
-                // std::cout << "collision lj_dist: " << mj_dist << std::endl;
-                // std::cout << "collision ri_dist: " << pi_dist << std::endl;
-                // std::cout << "collision li_dist: " << mi_dist << std::endl;
-
-                // std::cout << "ACK" << std::endl;
                 int res = dist_test(pj_dist, mj_dist, pi_dist, mi_dist);
+                bool do_all = true;
 
-                if (res == 0)
+                if (res == 0 || do_all)
                 {
-                    // std::cout << "RJ: " << rj << " j: " << j << std::endl;
                     image((rj + j) / 2, i) = imedit::Pixel(0.0, 0.0, 1.0);
                 }
-                if (res == 1)
+                if (res == 1 || do_all)
                 {
-                    // std::cout << "LJ: " << lj << std::endl;
                     image((lj + j) / 2, i) = imedit::Pixel(0.0, 0.0, 1.0);
                 }
-                if (res == 2)
+                if (res == 2 || do_all)
                 {
-                    // std::cout << "ri: " << ri << std::endl;
                     image(j, (ri + i) / 2) = imedit::Pixel(0.0, 0.0, 1.0);
                 }
-                if (res == 3)
+                if (res == 3 || do_all)
                 {
-                    // std::cout << "li: " << li << std::endl;
                     image(j, (li + i) / 2) = imedit::Pixel(0.0, 0.0, 1.0);
                 }
             }
@@ -206,7 +187,7 @@ imedit::Image create_important_points(imedit::Image &scene, imedit::Image &corne
     return image;
 }
 
-imedit::Image create_nodes(imedit::Image &scene, imedit::Image &imports)
+imedit::Image create_nodes_refined(imedit::Image &scene, imedit::Image &imports, imedit::Image &corners)
 {
     imedit::Image image = scene;
 
@@ -226,56 +207,89 @@ imedit::Image create_nodes(imedit::Image &scene, imedit::Image &imports)
             {
                 // find right collision
                 int rj = j + 1;
+                bool rj_hit_corner = false;
+                bool rj_hit_imp = false;
                 while (scene(rj, i).r == 0.0)
+                {
+                    if (imports(rj, i).b == 1.0)
+                        rj_hit_imp = 1.0;
+                    if (corners(rj, i).r == 1.0)
+                        rj_hit_corner = 1.0;
                     rj++;
+                }
+                if (imports(rj, i).b == 1.0)
+                    rj_hit_imp = 1.0;
+                if (corners(rj, i).r == 1.0)
+                    rj_hit_corner = 1.0;
                 // find left collision
                 int lj = j - 1;
+                bool lj_hit_corner = false;
+                bool lj_hit_imp = false;
                 while (scene(lj, i).r == 0.0)
+                {
+                    if (imports(lj, i).b == 1.0)
+                        lj_hit_imp = 1.0;
+                    if (corners(lj, i).r == 1.0)
+                        lj_hit_corner = 1.0;
                     lj--;
+                }
+                if (imports(lj, i).b == 1.0)
+                    lj_hit_imp = 1.0;
+                if (corners(lj, i).r == 1.0)
+                    lj_hit_corner = 1.0;
                 // find up collision
                 int ri = i + 1;
+                bool ri_hit_corner = false;
+                bool ri_hit_imp = false;
                 while (scene(j, ri).r == 0.0)
+                {
+                    if (imports(j, ri).b == 1.0)
+                        ri_hit_imp = 1.0;
+                    if (corners(j, ri).r == 1.0)
+                        ri_hit_corner = 1.0;
                     ri++;
-                // std::cout << "pre ri: " << ri << std::endl;
+                }
+                if (imports(j, ri).b == 1.0)
+                    ri_hit_imp = 1.0;
+                if (corners(j, ri).r == 1.0)
+                    ri_hit_corner = 1.0;
+
                 // find down collision
                 int li = i - 1;
+                bool li_hit_corner = false;
+                bool li_hit_imp = false;
                 while (scene(j, li).r == 0.0)
+                {
+                    if (imports(j, li).b == 1.0)
+                        li_hit_imp = 1.0;
+                    if (corners(j, li).r == 1.0)
+                        li_hit_corner = 1.0;
                     li--;
-
-                // std::cout << "collision rj: " << rj << std::endl;
-                // std::cout << "collision lj: " << lj << std::endl;
-                // std::cout << "collision ri: " << ri << std::endl;
-                // std::cout << "collision li: " << li << std::endl;
+                }
+                if (imports(j, li).b == 1.0)
+                    li_hit_imp = 1.0;
+                if (corners(j, li).r == 1.0)
+                    li_hit_corner = 1.0;
 
                 int pj_dist = std::abs(rj - j) - 1;
                 int mj_dist = std::abs(lj - j) - 1;
                 int pi_dist = std::abs(ri - i) - 1;
                 int mi_dist = std::abs(li - i) - 1;
 
-                // std::cout << "collision rj_dist: " << pj_dist << std::endl;
-                // std::cout << "collision lj_dist: " << mj_dist << std::endl;
-                // std::cout << "collision ri_dist: " << pi_dist << std::endl;
-                // std::cout << "collision li_dist: " << mi_dist << std::endl;
-
-                // std::cout << "ACK" << std::endl;
-                // int res = dist_test(pj_dist, mj_dist, pi_dist, mi_dist);
-
-                if (pj_dist > 0)
+                if (pj_dist > 0 && !rj_hit_imp && !(rj_hit_corner || lj_hit_corner))
                 {
                     image((rj + j) / 2, i) = imedit::Pixel(0.0, 1.0, 0.0);
                 }
-                if (mj_dist > 0)
+                if (mj_dist > 0 && !lj_hit_imp && !(rj_hit_corner || lj_hit_corner))
                 {
                     image((lj + j) / 2, i) = imedit::Pixel(0.0, 1.0, 0.0);
                 }
-                if (pi_dist > 0)
+                if (pi_dist > 0 && !ri_hit_imp && !(ri_hit_corner || li_hit_corner))
                 {
-                    // std::cout << "ri: " << ri << std::endl;
                     image(j, (ri + i) / 2) = imedit::Pixel(0.0, 1.0, 0.0);
                 }
-                if (mi_dist > 0)
+                if (mi_dist > 0 && !li_hit_imp && !(ri_hit_corner || li_hit_corner))
                 {
-                    // std::cout << "li: " << li << std::endl;
                     image(j, (li + i) / 2) = imedit::Pixel(0.0, 1.0, 0.0);
                 }
             }
@@ -342,7 +356,6 @@ imedit::Image connect_nodes(imedit::Image &scene, imedit::Image &nodes)
                     }
                     ri++;
                 }
-                // std::cout << "pre ri: " << ri << std::endl;
                 // find down collision
                 int li = i - 1;
                 while (scene(j, li).r == 0.0)
@@ -356,43 +369,6 @@ imedit::Image connect_nodes(imedit::Image &scene, imedit::Image &nodes)
                     }
                     li--;
                 }
-
-                // // std::cout << "collision rj: " << rj << std::endl;
-                // // std::cout << "collision lj: " << lj << std::endl;
-                // // std::cout << "collision ri: " << ri << std::endl;
-                // // std::cout << "collision li: " << li << std::endl;
-
-                // int pj_dist = std::abs(rj - j) - 1;
-                // int mj_dist = std::abs(lj - j) - 1;
-                // int pi_dist = std::abs(ri - i) - 1;
-                // int mi_dist = std::abs(li - i) - 1;
-
-                // // std::cout << "collision rj_dist: " << pj_dist << std::endl;
-                // // std::cout << "collision lj_dist: " << mj_dist << std::endl;
-                // // std::cout << "collision ri_dist: " << pi_dist << std::endl;
-                // // std::cout << "collision li_dist: " << mi_dist << std::endl;
-
-                // // std::cout << "ACK" << std::endl;
-                // // int res = dist_test(pj_dist, mj_dist, pi_dist, mi_dist);
-
-                // if (pj_dist > 0)
-                // {
-                //     image((rj + j) / 2, i) = imedit::Pixel(0.0, 1.0, 0.0);
-                // }
-                // if (mj_dist > 0)
-                // {
-                //     image((lj + j) / 2, i) = imedit::Pixel(0.0, 1.0, 0.0);
-                // }
-                // if (pi_dist > 0)
-                // {
-                //     // std::cout << "ri: " << ri << std::endl;
-                //     image(j, (ri + i) / 2) = imedit::Pixel(0.0, 1.0, 0.0);
-                // }
-                // if (mi_dist > 0)
-                // {
-                //     // std::cout << "li: " << li << std::endl;
-                //     image(j, (li + i) / 2) = imedit::Pixel(0.0, 1.0, 0.0);
-                // }
             }
         }
     }
@@ -444,7 +420,8 @@ int main(int argc, char *argv[])
     printf("imp\n");
     imp_pts.write("important_pts.png");
 
-    imedit::Image nodes = create_nodes(inverted, imp_pts);
+    // imedit::Image nodes = create_nodes(inverted, imp_pts);
+    imedit::Image nodes = create_nodes_refined(inverted, imp_pts, corner_image);
     printf("node\n");
     // nodes.write("nodes.png");
 
@@ -463,19 +440,19 @@ int main(int argc, char *argv[])
     node_graph.write("node_graph.png");
 
     imedit::Image scene_corners = (base_scene + corner_image * 3.0) / 4.0;
-    scene_corners.write("scene_p_corners.png");
+    scene_corners.write("../results/scene_p_corners.png");
 
     imedit::Image corners_imp_pts = (scene_corners + imp_pts * 3.0) / 4.0;
-    corners_imp_pts.write("corners_imp_pts.png");
+    corners_imp_pts.write("../results/corners_imp_pts.png");
 
     imedit::Image imp_pts_nodes = (corners_imp_pts + nodes * 3.0) / 4.0;
-    imp_pts_nodes.write("imp_pts_nodes.png");
+    imp_pts_nodes.write("../results/imp_pts_nodes.png");
 
     imedit::Image nodes_node_graph = (imp_pts_nodes * 4.0 + node_graph * 1.0) / 5.0;
-    nodes_node_graph.write("nodes_node_graph.png");
+    nodes_node_graph.write("../results/nodes_node_graph.png");
 
     imedit::Image final_graph = base_scene + node_graph;
-    final_graph.write("final_graph.png");
+    final_graph.write("../results/final_graph.png");
 
     return 0;
 
